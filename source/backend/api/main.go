@@ -2,22 +2,46 @@ package main
 
 import (
 	"fmt"
-	"github.com/orlandoburli/feature-bacon/api/adapters/routers"
-	"net/http"
+	"github.com/gin-gonic/gin"
+	"github.com/orlandoburli/feature-bacon/api/persistence"
+	"github.com/orlandoburli/feature-bacon/api/security/management/roles"
 )
 
 func main() {
-	port := 8080
+	initDB()
 
-	mux := routers.BuildRoutes()
+	r := gin.Default()
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+	mapHandlersToRoutes(r)
 
-	fmt.Printf("Server started on port %d\n", port)
+	err := r.Run()
 
 	if err != nil {
 		fmt.Printf("Error starting server %s\n", err)
 		return
 	}
+}
 
+func initDB() {
+	db := persistence.ConnectDb()
+
+	err := persistence.AddExtraFunctions()
+
+	if err != nil {
+		panic("Failed to add extra functions")
+	}
+
+	err = db.AutoMigrate(&roles.Role{})
+
+	if err != nil {
+		panic("failed to execute migration")
+	}
+}
+
+func mapHandlersToRoutes(r *gin.Engine) {
+	r.GET("/security/management/roles", roles.GetRoles)
+	r.GET("/security/management/roles/:id", roles.GetRole)
+	r.POST("/security/management/roles", roles.CreateRole)
+	r.PUT("/security/management/roles/:id", roles.UpdateRole)
+	r.DELETE("/security/management/roles/:id", roles.DeleteRole)
 }
