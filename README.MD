@@ -3,6 +3,8 @@
 
 ## Overview
 
+**Specifications:** [docs/SPEC.md](docs/SPEC.md) — product goals, requirements, flag semantics, and roadmap-style priorities.
+
 The goal of feature bacon is to have a most complete tool to provide flags control for frontend, 
 backend, mobile environments. Using different inputs to deliver flags, such as session variables, jwt tokens,
 session data, headers, ip addresses, etc.
