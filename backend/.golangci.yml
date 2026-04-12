@@ -1,16 +1,24 @@
+version: "2"
 run:
-  go: "1.23"
+  go: "1.25"
 linters:
+  default: none
   enable:
     - errcheck
     - govet
     - ineffassign
     - staticcheck
     - unused
+    - misspell
+  exclusions:
+    paths:
+      - gen
+    rules:
+      - linters: [errcheck]
+        path: _test\.go
+      - linters: [errcheck]
+        text: "Error return value of .*.Close"
+formatters:
+  enable:
     - gofmt
     - goimports
-    - misspell
-    - revive
-issues:
-  exclude-dirs:
-    - gen
