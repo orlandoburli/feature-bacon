@@ -1,0 +1,17 @@
+schema: spec-driven
+
+context: |
+  Feature Bacon is a feature-flag and experimentation platform.
+  It evaluates flags and A/B experiments for web, backend, and mobile
+  applications using rich evaluation context (JWT, headers, IP, session, custom attributes).
+
+  Tech stack: Go (backend API + engine), React/Next.js (management UI)
+  Architecture: Modular — persistence and outbound integrations are
+  swappable modules behind Go interfaces, selected via configuration.
+  Deployment: Same binary supports SaaS multi-tenant or single-app sidecar mode.
+
+rules:
+  specs:
+    - Use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) for requirements
+    - Include Given/When/Then scenarios for testable behavior
+    - Keep implementation details in architecture spec, not domain specs
