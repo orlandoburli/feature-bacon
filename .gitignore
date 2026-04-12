@@ -8,9 +8,9 @@
 .DS_Store
 Thumbs.db
 
-# Certificates (except README)
-certs/*
-!certs/README.md
+# Certificates (keep scripts, ignore generated)
+certs/dev/
+!certs/generate.sh
 
 # Node
 node_modules/
