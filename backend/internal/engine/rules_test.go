@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -190,6 +191,15 @@ func TestEvaluateCondition_Regex(t *testing.T) {
 	cond.Value = "^Chrome.*"
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected regex to not match")
+	}
+}
+
+func TestEvaluateCondition_Regex_TooLong(t *testing.T) {
+	ctx := baseCtx()
+	longPattern := strings.Repeat("a", maxRegexPatternLen+1)
+	cond := Condition{Attribute: "attributes.user_agent", Operator: OpRegex, Value: longPattern}
+	if EvaluateCondition(cond, ctx) {
+		t.Error("expected oversized regex pattern to not match")
 	}
 }
 

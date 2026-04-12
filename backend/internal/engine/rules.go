@@ -164,6 +164,8 @@ func numericCmp(actual, expected any, cmp func(float64, float64) bool) bool {
 	return cmp(a, b)
 }
 
+const maxRegexPatternLen = 1024
+
 func regexMatch(actual, pattern any) bool {
 	a, ok := toString(actual)
 	if !ok {
@@ -173,6 +175,11 @@ func regexMatch(actual, pattern any) bool {
 	if !ok {
 		return false
 	}
+	if len(p) > maxRegexPatternLen {
+		return false
+	}
+	// Go's regexp package uses RE2, which guarantees linear-time matching
+	// and is not susceptible to catastrophic backtracking (ReDoS).
 	re, err := regexp.Compile(p)
 	if err != nil {
 		return false
