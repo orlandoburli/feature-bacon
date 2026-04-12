@@ -19,22 +19,30 @@ func (c Config) Enabled() bool {
 	return c.CAFile != "" && c.CertFile != "" && c.KeyFile != ""
 }
 
-// ClientTLSConfig builds a tls.Config suitable for a gRPC client with mTLS.
-func ClientTLSConfig(cfg Config) (*tls.Config, error) {
+// loadCAAndCert loads the CA pool and key pair from the config paths.
+func loadCAAndCert(cfg Config) (*x509.CertPool, tls.Certificate, error) {
 	caCert, err := os.ReadFile(cfg.CAFile)
 	if err != nil {
-		return nil, fmt.Errorf("read CA cert: %w", err)
+		return nil, tls.Certificate{}, fmt.Errorf("read CA cert: %w", err)
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caCert) {
-		return nil, fmt.Errorf("failed to append CA cert")
+		return nil, tls.Certificate{}, fmt.Errorf("failed to append CA cert")
 	}
 
 	cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("load client cert/key: %w", err)
+		return nil, tls.Certificate{}, fmt.Errorf("load cert/key: %w", err)
 	}
+	return pool, cert, nil
+}
 
+// ClientTLSConfig builds a tls.Config suitable for a gRPC client with mTLS.
+func ClientTLSConfig(cfg Config) (*tls.Config, error) {
+	pool, cert, err := loadCAAndCert(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      pool,
@@ -44,20 +52,10 @@ func ClientTLSConfig(cfg Config) (*tls.Config, error) {
 
 // ServerTLSConfig builds a tls.Config suitable for a gRPC server with mTLS.
 func ServerTLSConfig(cfg Config) (*tls.Config, error) {
-	caCert, err := os.ReadFile(cfg.CAFile)
+	pool, cert, err := loadCAAndCert(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("read CA cert: %w", err)
+		return nil, err
 	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(caCert) {
-		return nil, fmt.Errorf("failed to append CA cert")
-	}
-
-	cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("load server cert/key: %w", err)
-	}
-
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    pool,
