@@ -12,7 +12,7 @@ import (
 
 type stubStore struct{}
 
-func (s *stubStore) GetFlag(tenantID, flagKey string) (*engine.FlagDefinition, error) {
+func (s *stubStore) GetFlag(_, flagKey string) (*engine.FlagDefinition, error) {
 	if flagKey == "test-flag" {
 		return &engine.FlagDefinition{
 			Key:     "test-flag",
@@ -27,7 +27,7 @@ func (s *stubStore) GetFlag(tenantID, flagKey string) (*engine.FlagDefinition, e
 	return nil, nil
 }
 
-func (s *stubStore) ListFlagKeys(tenantID string) ([]string, error) {
+func (s *stubStore) ListFlagKeys(_ string) ([]string, error) {
 	return []string{"test-flag"}, nil
 }
 

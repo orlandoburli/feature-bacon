@@ -51,7 +51,7 @@ func TestCorrelation_EchoesExisting(t *testing.T) {
 
 func TestCorrelation_UniqueIDs(t *testing.T) {
 	ids := make(map[string]struct{})
-	handler := Correlation(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := Correlation(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -72,7 +72,7 @@ func TestVersionHeader(t *testing.T) {
 	Version = "1.2.3"
 	defer func() { Version = old }()
 
-	handler := VersionHeader(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := VersionHeader(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -91,7 +91,7 @@ func TestVersionHeader_Default(t *testing.T) {
 	Version = "dev"
 	defer func() { Version = old }()
 
-	handler := VersionHeader(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := VersionHeader(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
