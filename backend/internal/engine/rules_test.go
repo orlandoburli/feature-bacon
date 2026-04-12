@@ -213,8 +213,8 @@ func TestEvaluateCondition_SemverMatch(t *testing.T) {
 		{"<=2.3.0", false},
 		{"=2.3.1", true},
 		{"=2.3.2", false},
-		{"2.3.1", true},   // implicit =
-		{"v2.3.1", true},  // v prefix
+		{"2.3.1", true},  // implicit =
+		{"v2.3.1", true}, // v prefix
 	}
 
 	for _, tt := range tests {
