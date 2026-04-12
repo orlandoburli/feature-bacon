@@ -14,6 +14,7 @@ const (
 	fmtUnexpectedErr = "unexpected error: %v"
 	tenantDefault    = "_default"
 	flagDarkMode     = "dark-mode"
+	subjectUser1     = "user-1"
 )
 
 type mockPersistenceServer struct {
@@ -61,11 +62,11 @@ func (m *mockPersistenceServer) ListFlags(_ context.Context, _ *pb.ListFlagsRequ
 }
 
 func (m *mockPersistenceServer) GetAssignment(_ context.Context, req *pb.GetAssignmentRequest) (*pb.GetAssignmentResponse, error) {
-	if req.SubjectId == "user-1" && req.FlagKey == flagDarkMode {
+	if req.SubjectId == subjectUser1 && req.FlagKey == flagDarkMode {
 		return &pb.GetAssignmentResponse{
 			Found: true,
 			Assignment: &pb.Assignment{
-				SubjectId: "user-1",
+				SubjectId: subjectUser1,
 				FlagKey:   flagDarkMode,
 				Enabled:   true,
 				Variant:   "on",
@@ -156,7 +157,7 @@ func TestPersistenceClient_GetAssignment(t *testing.T) {
 	conn := startMockServer(t)
 	client := NewPersistenceClient(conn)
 
-	assignment, found, err := client.GetAssignment(tenantDefault, "user-1", flagDarkMode)
+	assignment, found, err := client.GetAssignment(tenantDefault, subjectUser1, flagDarkMode)
 	if err != nil {
 		t.Fatalf(fmtUnexpectedErr, err)
 	}
@@ -186,7 +187,7 @@ func TestPersistenceClient_SaveAssignment(t *testing.T) {
 	client := NewPersistenceClient(conn)
 
 	err := client.SaveAssignment(tenantDefault, &pb.Assignment{
-		SubjectId: "user-1",
+		SubjectId: subjectUser1,
 		FlagKey:   flagDarkMode,
 		Enabled:   true,
 		Variant:   "on",

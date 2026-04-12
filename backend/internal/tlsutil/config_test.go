@@ -16,6 +16,7 @@ import (
 
 const (
 	fmtUnexpectedErr = "unexpected error: %v"
+	pathNonexistent  = "/nonexistent"
 )
 
 func generateTestCerts(t *testing.T) (caPath, certPath, keyPath string) {
@@ -113,7 +114,7 @@ func TestServerTLSConfig_Valid(t *testing.T) {
 }
 
 func TestClientTLSConfig_BadCA(t *testing.T) {
-	_, err := ClientTLSConfig(Config{CAFile: "/nonexistent", CertFile: "c", KeyFile: "k"})
+	_, err := ClientTLSConfig(Config{CAFile: pathNonexistent, CertFile: "c", KeyFile: "k"})
 	if err == nil {
 		t.Fatal("expected error for missing CA")
 	}
@@ -121,7 +122,7 @@ func TestClientTLSConfig_BadCA(t *testing.T) {
 
 func TestClientTLSConfig_BadCert(t *testing.T) {
 	ca, _, _ := generateTestCerts(t)
-	_, err := ClientTLSConfig(Config{CAFile: ca, CertFile: "/nonexistent", KeyFile: "/nonexistent"})
+	_, err := ClientTLSConfig(Config{CAFile: ca, CertFile: pathNonexistent, KeyFile: pathNonexistent})
 	if err == nil {
 		t.Fatal("expected error for missing cert")
 	}
