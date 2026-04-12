@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 	binaryPath = filepath.Join(tmp, "bacon-core")
 
 	cmd := exec.Command("go", "build", "-o", binaryPath, "./cmd/bacon-core") //NOSONAR — test-only build step, no user input
-	cmd.Dir = filepath.Join("..", "..", "..")
+	cmd.Dir = filepath.Join("..", "..")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
