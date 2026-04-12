@@ -16,6 +16,7 @@ const (
 	fmtStatusWant     = "status = %d, want %d"
 	headerRequestID   = "X-Request-Id"
 	requestIDCustom42 = "custom-id-42"
+	pathEvalEndpoint  = "/api/v1/evaluate"
 )
 
 func testRouter(eng *engine.Engine) http.Handler {
@@ -85,7 +86,7 @@ func TestNewRouter_Evaluate(t *testing.T) {
 	router := testRouter(eng)
 
 	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"user-1"}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -141,7 +142,7 @@ func TestNewRouter_AuthEnabled_Unauthorized(t *testing.T) {
 	})
 
 	body := `{"flagKey":"test-flag","context":{"subjectId":"u1"}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -167,7 +168,7 @@ func TestNewRouter_AuthEnabled_ValidKey(t *testing.T) {
 	})
 
 	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"u1"}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
 	req.Header.Set("Authorization", "ApiKey "+rawKey)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -181,7 +182,7 @@ func TestNewRouter_MethodNotAllowed(t *testing.T) {
 	eng := engine.New(&stubStore{})
 	router := testRouter(eng)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/evaluate", nil)
+	req := httptest.NewRequest(http.MethodGet, pathEvalEndpoint, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
