@@ -17,7 +17,6 @@ const (
 	pathEvaluateBatch = "/api/v1/evaluate/batch"
 	tenantMyTenant    = "my-tenant"
 	fmtStatusWant     = "status = %d, want %d"
-	fmtDecode         = "decode: %v"
 )
 
 type stubStore struct {
