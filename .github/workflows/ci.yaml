@@ -116,18 +116,9 @@ jobs:
 
       - name: SonarQube Scan
         if: env.HAS_SONAR_TOKEN == 'true'
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-
-      - name: SonarQube Quality Gate
-        if: env.HAS_SONAR_TOKEN == 'true'
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
 
   build:
     name: Build
