@@ -49,7 +49,7 @@ func HandleEvaluate(eng *engine.Engine) http.HandlerFunc {
 		result := eng.Evaluate(req.FlagKey, ctx)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	}
 }
 
@@ -78,7 +78,7 @@ func HandleEvaluateBatch(eng *engine.Engine) http.HandlerFunc {
 		results := eng.EvaluateBatch(req.FlagKeys, ctx)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"results": results})
+		_ = json.NewEncoder(w).Encode(map[string]any{"results": results})
 	}
 }
 

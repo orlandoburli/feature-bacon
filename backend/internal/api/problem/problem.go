@@ -25,7 +25,7 @@ func (p *Problem) Error() string {
 func Write(w http.ResponseWriter, p *Problem) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(p.Status)
-	json.NewEncoder(w).Encode(p)
+	_ = json.NewEncoder(w).Encode(p)
 }
 
 func Unauthorized(detail, instance string) *Problem {
