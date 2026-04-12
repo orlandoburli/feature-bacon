@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+const (
+	pathEvaluate          = "/api/v1/evaluate"
+	pathFlags             = "/api/v1/flags"
+	titleReadOnlyMode     = "Read-Only Mode"
+	detailFlagNotFound    = "flag not found"
+	detailFlagKeyRequired = "flagKey is required"
+)
+
 func TestFactoryFunctions(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -15,13 +23,13 @@ func TestFactoryFunctions(t *testing.T) {
 		wantCode  int
 		wantTitle string
 	}{
-		{"Unauthorized", Unauthorized("bad token", "/api/v1/evaluate"), "https://bacon.dev/problems/unauthorized", 401, "Unauthorized"},
-		{"Forbidden", Forbidden("no access", "/api/v1/flags"), "https://bacon.dev/problems/forbidden", 403, "Forbidden"},
+		{"Unauthorized", Unauthorized("bad token", pathEvaluate), "https://bacon.dev/problems/unauthorized", 401, "Unauthorized"},
+		{"Forbidden", Forbidden("no access", pathFlags), "https://bacon.dev/problems/forbidden", 403, "Forbidden"},
 		{"NotFound", NotFound("flag missing", "/api/v1/flags/x"), "https://bacon.dev/problems/not-found", 404, "Not Found"},
-		{"Conflict", Conflict("already exists", "/api/v1/flags"), "https://bacon.dev/problems/conflict", 409, "Conflict"},
-		{"ValidationError", ValidationError("flagKey required", "/api/v1/evaluate"), "https://bacon.dev/problems/validation-error", 422, "Validation Error"},
-		{"ReadOnlyMode", ReadOnlyMode("/api/v1/flags"), "/problems/read-only-mode", 409, "Read-Only Mode"},
-		{"InternalError", InternalError("unexpected", "/api/v1/evaluate"), "https://bacon.dev/problems/internal-error", 500, "Internal Server Error"},
+		{"Conflict", Conflict("already exists", pathFlags), "https://bacon.dev/problems/conflict", 409, "Conflict"},
+		{"ValidationError", ValidationError("flagKey required", pathEvaluate), "https://bacon.dev/problems/validation-error", 422, "Validation Error"},
+		{"ReadOnlyMode", ReadOnlyMode(pathFlags), "/problems/read-only-mode", 409, titleReadOnlyMode},
+		{"InternalError", InternalError("unexpected", pathEvaluate), "https://bacon.dev/problems/internal-error", 500, "Internal Server Error"},
 	}
 
 	for _, tt := range tests {
@@ -40,20 +48,20 @@ func TestFactoryFunctions(t *testing.T) {
 }
 
 func TestProblemError(t *testing.T) {
-	p := NotFound("flag not found", "/test")
-	if p.Error() != "flag not found" {
-		t.Errorf("Error() = %q, want %q", p.Error(), "flag not found")
+	p := NotFound(detailFlagNotFound, "/test")
+	if p.Error() != detailFlagNotFound {
+		t.Errorf("Error() = %q, want %q", p.Error(), detailFlagNotFound)
 	}
 
 	p2 := ReadOnlyMode("/test")
-	if p2.Error() != "Read-Only Mode" {
-		t.Errorf("Error() = %q, want %q", p2.Error(), "Read-Only Mode")
+	if p2.Error() != titleReadOnlyMode {
+		t.Errorf("Error() = %q, want %q", p2.Error(), titleReadOnlyMode)
 	}
 }
 
 func TestWrite(t *testing.T) {
 	w := httptest.NewRecorder()
-	p := ValidationError("flagKey is required", "/api/v1/evaluate")
+	p := ValidationError(detailFlagKeyRequired, pathEvaluate)
 
 	Write(w, p)
 
@@ -74,8 +82,8 @@ func TestWrite(t *testing.T) {
 	if got.Type != p.Type {
 		t.Errorf("body type = %q, want %q", got.Type, p.Type)
 	}
-	if got.Detail != "flagKey is required" {
-		t.Errorf("body detail = %q, want %q", got.Detail, "flagKey is required")
+	if got.Detail != detailFlagKeyRequired {
+		t.Errorf("body detail = %q, want %q", got.Detail, detailFlagKeyRequired)
 	}
 }
 

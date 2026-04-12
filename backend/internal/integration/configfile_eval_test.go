@@ -14,9 +14,17 @@ import (
 	"time"
 )
 
-var binaryPath string
+const (
+	baseURLFmt      = "http://%s"
+	flagDarkMode    = "dark-mode"
+	userDefault     = "user-1"
+	flagDisabled    = "disabled-flag"
+	flagNewCheckout = "new-checkout"
+	decodeErrFmt    = "decode: %v"
+	testAddr        = "127.0.0.1:18080"
+)
 
-const testAddr = "127.0.0.1:18080"
+var binaryPath string
 
 func TestMain(m *testing.M) {
 	tmp, err := os.MkdirTemp("", "bacon-integration-*")
@@ -45,7 +53,7 @@ func TestMain(m *testing.M) {
 const flagsYAML = `tenants:
   _default:
     flags:
-      - key: dark-mode
+      - key: ` + flagDarkMode + `
         type: boolean
         semantics: deterministic
         enabled: true
@@ -60,7 +68,7 @@ const flagsYAML = `tenants:
         defaultResult:
           enabled: false
           variant: "off"
-      - key: new-checkout
+      - key: ` + flagNewCheckout + `
         type: boolean
         semantics: deterministic
         enabled: true
@@ -69,7 +77,7 @@ const flagsYAML = `tenants:
         defaultResult:
           enabled: true
           variant: v2
-      - key: disabled-flag
+      - key: ` + flagDisabled + `
         type: boolean
         semantics: deterministic
         enabled: false
@@ -125,7 +133,7 @@ func startServer(t *testing.T, flagsFile string) *exec.Cmd {
 		t.Fatalf("start server: %v", err)
 	}
 
-	base := fmt.Sprintf("http://%s", testAddr)
+	base := fmt.Sprintf(baseURLFmt, testAddr)
 	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
 		resp, err := http.Get(base + "/healthz")
@@ -172,12 +180,34 @@ func postJSON(t *testing.T, url string, body any) *http.Response {
 	return resp
 }
 
+func assertEvalResponse(t *testing.T, resp *http.Response, got *evalResponse, wantKey string, wantOn bool, wantVar, wantReason string) {
+	t.Helper()
+	if got.FlagKey != wantKey {
+		t.Errorf("flagKey = %q, want %q", got.FlagKey, wantKey)
+	}
+	if got.Enabled != wantOn {
+		t.Errorf("enabled = %v, want %v", got.Enabled, wantOn)
+	}
+	if got.Variant != wantVar {
+		t.Errorf("variant = %q, want %q", got.Variant, wantVar)
+	}
+	if got.Reason != wantReason {
+		t.Errorf("reason = %q, want %q", got.Reason, wantReason)
+	}
+	if resp.Header.Get("X-Request-Id") == "" {
+		t.Error("X-Request-Id header missing")
+	}
+	if resp.Header.Get("X-Bacon-Version") == "" {
+		t.Error("X-Bacon-Version header missing")
+	}
+}
+
 func TestEvaluateSingleFlag(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
 	cmd := startServer(t, flagsFile)
 	defer stopServer(t, cmd)
 
-	base := fmt.Sprintf("http://%s", testAddr)
+	base := fmt.Sprintf(baseURLFmt, testAddr)
 
 	tests := []struct {
 		name    string
@@ -190,13 +220,13 @@ func TestEvaluateSingleFlag(t *testing.T) {
 		{
 			name: "dark-mode enabled in production",
 			body: map[string]any{
-				"flagKey": "dark-mode",
+				"flagKey": flagDarkMode,
 				"context": map[string]any{
-					"subjectId":   "user-1",
+					"subjectId":   userDefault,
 					"environment": "production",
 				},
 			},
-			wantKey: "dark-mode",
+			wantKey: flagDarkMode,
 			wantOn:  true,
 			wantVar: "on",
 			reason:  "rule_match",
@@ -204,13 +234,13 @@ func TestEvaluateSingleFlag(t *testing.T) {
 		{
 			name: "dark-mode default in staging",
 			body: map[string]any{
-				"flagKey": "dark-mode",
+				"flagKey": flagDarkMode,
 				"context": map[string]any{
-					"subjectId":   "user-1",
+					"subjectId":   userDefault,
 					"environment": "staging",
 				},
 			},
-			wantKey: "dark-mode",
+			wantKey: flagDarkMode,
 			wantOn:  false,
 			wantVar: "off",
 			reason:  "default",
@@ -218,12 +248,12 @@ func TestEvaluateSingleFlag(t *testing.T) {
 		{
 			name: "disabled flag returns disabled",
 			body: map[string]any{
-				"flagKey": "disabled-flag",
+				"flagKey": flagDisabled,
 				"context": map[string]any{
-					"subjectId": "user-1",
+					"subjectId": userDefault,
 				},
 			},
-			wantKey: "disabled-flag",
+			wantKey: flagDisabled,
 			wantOn:  false,
 			wantVar: "",
 			reason:  "disabled",
@@ -231,12 +261,12 @@ func TestEvaluateSingleFlag(t *testing.T) {
 		{
 			name: "new-checkout default result",
 			body: map[string]any{
-				"flagKey": "new-checkout",
+				"flagKey": flagNewCheckout,
 				"context": map[string]any{
 					"subjectId": "user-2",
 				},
 			},
-			wantKey: "new-checkout",
+			wantKey: flagNewCheckout,
 			wantOn:  true,
 			wantVar: "v2",
 			reason:  "default",
@@ -254,28 +284,10 @@ func TestEvaluateSingleFlag(t *testing.T) {
 
 			var result evalResponse
 			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				t.Fatalf("decode: %v", err)
+				t.Fatalf(decodeErrFmt, err)
 			}
 
-			if result.FlagKey != tt.wantKey {
-				t.Errorf("flagKey = %q, want %q", result.FlagKey, tt.wantKey)
-			}
-			if result.Enabled != tt.wantOn {
-				t.Errorf("enabled = %v, want %v", result.Enabled, tt.wantOn)
-			}
-			if result.Variant != tt.wantVar {
-				t.Errorf("variant = %q, want %q", result.Variant, tt.wantVar)
-			}
-			if result.Reason != tt.reason {
-				t.Errorf("reason = %q, want %q", result.Reason, tt.reason)
-			}
-
-			if rid := resp.Header.Get("X-Request-Id"); rid == "" {
-				t.Error("X-Request-Id header missing")
-			}
-			if ver := resp.Header.Get("X-Bacon-Version"); ver == "" {
-				t.Error("X-Bacon-Version header missing")
-			}
+			assertEvalResponse(t, resp, &result, tt.wantKey, tt.wantOn, tt.wantVar, tt.reason)
 		})
 	}
 }
@@ -285,12 +297,12 @@ func TestEvaluateBatch(t *testing.T) {
 	cmd := startServer(t, flagsFile)
 	defer stopServer(t, cmd)
 
-	base := fmt.Sprintf("http://%s", testAddr)
+	base := fmt.Sprintf(baseURLFmt, testAddr)
 
 	body := map[string]any{
-		"flagKeys": []string{"dark-mode", "new-checkout", "disabled-flag"},
+		"flagKeys": []string{flagDarkMode, flagNewCheckout, flagDisabled},
 		"context": map[string]any{
-			"subjectId":   "user-1",
+			"subjectId":   userDefault,
 			"environment": "production",
 		},
 	}
@@ -304,7 +316,7 @@ func TestEvaluateBatch(t *testing.T) {
 
 	var batch batchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&batch); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(decodeErrFmt, err)
 	}
 
 	if len(batch.Results) != 3 {
@@ -315,9 +327,9 @@ func TestEvaluateBatch(t *testing.T) {
 		enabled bool
 		variant string
 	}{
-		"dark-mode":     {true, "on"},
-		"new-checkout":  {true, "v2"},
-		"disabled-flag": {false, ""},
+		flagDarkMode:    {true, "on"},
+		flagNewCheckout: {true, "v2"},
+		flagDisabled:    {false, ""},
 	}
 
 	for _, r := range batch.Results {
@@ -334,10 +346,10 @@ func TestEvaluateBatch(t *testing.T) {
 		}
 	}
 
-	if rid := resp.Header.Get("X-Request-Id"); rid == "" {
+	if resp.Header.Get("X-Request-Id") == "" {
 		t.Error("X-Request-Id header missing")
 	}
-	if ver := resp.Header.Get("X-Bacon-Version"); ver == "" {
+	if resp.Header.Get("X-Bacon-Version") == "" {
 		t.Error("X-Bacon-Version header missing")
 	}
 }
@@ -347,12 +359,12 @@ func TestNotFoundFlag(t *testing.T) {
 	cmd := startServer(t, flagsFile)
 	defer stopServer(t, cmd)
 
-	base := fmt.Sprintf("http://%s", testAddr)
+	base := fmt.Sprintf(baseURLFmt, testAddr)
 
 	body := map[string]any{
 		"flagKey": "nonexistent",
 		"context": map[string]any{
-			"subjectId": "user-1",
+			"subjectId": userDefault,
 		},
 	}
 
@@ -361,7 +373,7 @@ func TestNotFoundFlag(t *testing.T) {
 
 	var result evalResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(decodeErrFmt, err)
 	}
 
 	if result.Enabled {

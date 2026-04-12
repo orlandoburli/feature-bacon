@@ -10,12 +10,19 @@ import (
 	"github.com/orlandoburli/feature-bacon/internal/engine"
 )
 
+const (
+	flagKeyTestFlag   = "test-flag"
+	fmtStatusWant     = "status = %d, want %d"
+	headerRequestID   = "X-Request-Id"
+	requestIDCustom42 = "custom-id-42"
+)
+
 type stubStore struct{}
 
 func (s *stubStore) GetFlag(_, flagKey string) (*engine.FlagDefinition, error) {
-	if flagKey == "test-flag" {
+	if flagKey == flagKeyTestFlag {
 		return &engine.FlagDefinition{
-			Key:     "test-flag",
+			Key:     flagKeyTestFlag,
 			Type:    engine.FlagTypeBoolean,
 			Enabled: true,
 			DefaultResult: engine.EvalResult{
@@ -28,7 +35,7 @@ func (s *stubStore) GetFlag(_, flagKey string) (*engine.FlagDefinition, error) {
 }
 
 func (s *stubStore) ListFlagKeys(_ string) ([]string, error) {
-	return []string{"test-flag"}, nil
+	return []string{flagKeyTestFlag}, nil
 }
 
 func TestNewRouter_Healthz(t *testing.T) {
@@ -40,14 +47,14 @@ func TestNewRouter_Healthz(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
 	}
 
 	if w.Header().Get("X-Bacon-Version") == "" {
 		t.Error("expected X-Bacon-Version header")
 	}
-	if w.Header().Get("X-Request-Id") == "" {
-		t.Error("expected X-Request-Id header")
+	if w.Header().Get(headerRequestID) == "" {
+		t.Error("expected " + headerRequestID + " header")
 	}
 }
 
@@ -60,7 +67,7 @@ func TestNewRouter_Readyz(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
 	}
 }
 
@@ -68,22 +75,22 @@ func TestNewRouter_Evaluate(t *testing.T) {
 	eng := engine.New(&stubStore{})
 	router := NewRouter(eng)
 
-	body := `{"flagKey":"test-flag","context":{"subjectId":"user-1"}}`
+	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"user-1"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
 	}
 
 	var result engine.EvaluationResult
 	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if result.FlagKey != "test-flag" {
-		t.Errorf("flagKey = %q, want %q", result.FlagKey, "test-flag")
+	if result.FlagKey != flagKeyTestFlag {
+		t.Errorf("flagKey = %q, want %q", result.FlagKey, flagKeyTestFlag)
 	}
 }
 
@@ -91,14 +98,14 @@ func TestNewRouter_EvaluateBatch(t *testing.T) {
 	eng := engine.New(&stubStore{})
 	router := NewRouter(eng)
 
-	body := `{"flagKeys":["test-flag"],"context":{"subjectId":"user-1"}}`
+	body := `{"flagKeys":["` + flagKeyTestFlag + `"],"context":{"subjectId":"user-1"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate/batch", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
 	}
 }
 
@@ -107,12 +114,12 @@ func TestNewRouter_CorrelationID_Echo(t *testing.T) {
 	router := NewRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-	req.Header.Set("X-Request-Id", "custom-id-42")
+	req.Header.Set(headerRequestID, requestIDCustom42)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	if w.Header().Get("X-Request-Id") != "custom-id-42" {
-		t.Errorf("X-Request-Id = %q, want %q", w.Header().Get("X-Request-Id"), "custom-id-42")
+	if w.Header().Get(headerRequestID) != requestIDCustom42 {
+		t.Errorf("%s = %q, want %q", headerRequestID, w.Header().Get(headerRequestID), requestIDCustom42)
 	}
 }
 
