@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	testKid      = "test-kid-1"
-	testIssuer   = "https://auth.test.com"
-	testAudience = "bacon-api"
-	claimTenant  = "org_id"
-	tenantAcme   = "acme"
+	testKid        = "test-kid-1"
+	testIssuer     = "https://auth.test.com"
+	testAudience   = "bacon-api"
+	claimTenant    = "org_id"
+	tenantAcme     = "acme"
+	fmtUnexpectErr = "unexpected error: %v"
 )
 
 type testJWKS struct {
@@ -83,7 +84,7 @@ func TestJWTValidator_ValidToken(t *testing.T) {
 
 	result, err := v.Validate(tokenStr)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectErr, err)
 	}
 	if result.TenantID != tenantAcme {
 		t.Errorf("expected tenant %s, got %s", tenantAcme, result.TenantID)
@@ -197,7 +198,7 @@ func TestJWTValidator_WithScopeClaim(t *testing.T) {
 
 	result, err := v.Validate(tokenStr)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectErr, err)
 	}
 	if result.Scope != ScopeManagement {
 		t.Errorf("expected scope management, got %s", result.Scope)
@@ -222,7 +223,7 @@ func TestJWTValidator_NestedTenantClaim(t *testing.T) {
 
 	result, err := v.Validate(tokenStr)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectErr, err)
 	}
 	if result.TenantID != tenantAcme {
 		t.Errorf("expected tenant %s, got %s", tenantAcme, result.TenantID)

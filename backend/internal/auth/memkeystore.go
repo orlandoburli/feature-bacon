@@ -2,7 +2,7 @@ package auth
 
 import "sync"
 
-// MemKeyStore is an in-memory KeyStore backed by a map of hash -> APIKey.
+// MemKeyStore is an in-memory KeyLookup backed by a map of hash -> APIKey.
 // Used for config-file and env-var based key loading.
 type MemKeyStore struct {
 	mu   sync.RWMutex
@@ -25,4 +25,4 @@ func (s *MemKeyStore) LookupByHash(hash string) (*APIKey, error) {
 	return s.keys[hash], nil
 }
 
-var _ KeyStore = (*MemKeyStore)(nil)
+var _ KeyLookup = (*MemKeyStore)(nil)

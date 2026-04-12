@@ -35,7 +35,7 @@ func Prefix(raw string) string {
 	return raw[:8]
 }
 
-// KeyStore provides read access to API keys.
-type KeyStore interface {
+// KeyLookup provides read access to API keys by hash.
+type KeyLookup interface {
 	LookupByHash(hash string) (*APIKey, error)
 }
