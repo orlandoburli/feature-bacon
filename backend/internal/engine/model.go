@@ -21,13 +21,13 @@ const (
 type Operator string
 
 const (
-	OpEquals     Operator = "equals"
-	OpNotEquals  Operator = "not_equals"
-	OpIn         Operator = "in"
-	OpNotIn      Operator = "not_in"
-	OpContains   Operator = "contains"
-	OpStartsWith Operator = "starts_with"
-	OpEndsWith   Operator = "ends_with"
+	OpEquals      Operator = "equals"
+	OpNotEquals   Operator = "not_equals"
+	OpIn          Operator = "in"
+	OpNotIn       Operator = "not_in"
+	OpContains    Operator = "contains"
+	OpStartsWith  Operator = "starts_with"
+	OpEndsWith    Operator = "ends_with"
 	OpGreaterThan Operator = "greater_than"
 	OpLessThan    Operator = "less_than"
 	OpRegex       Operator = "regex"

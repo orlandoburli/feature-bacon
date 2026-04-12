@@ -74,9 +74,9 @@ func TestBucket_RolloutPercentageAccuracy(t *testing.T) {
 
 func TestInRollout_Boundaries(t *testing.T) {
 	tests := []struct {
-		name    string
-		pct     int
-		wantAll bool
+		name     string
+		pct      int
+		wantAll  bool
 		wantNone bool
 	}{
 		{"zero", 0, false, true},
