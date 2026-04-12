@@ -116,11 +116,13 @@ jobs:
         run: |
           echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
 
-      - name: SonarQube Scan
+      - name: SonarQube Scan Backend
         if: env.HAS_SONAR_TOKEN == 'true'
         uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: backend/
 
   build:
     name: Build
