@@ -57,6 +57,10 @@ jobs:
         working-directory: backend
         run: go test -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/... ./...
 
+      - name: Rewrite coverage paths for SonarQube
+        working-directory: backend
+        run: sed -i 's|github.com/orlandoburli/feature-bacon/|backend/|g' coverage.out
+
       - name: Parse coverage
         id: coverage
         working-directory: backend
