@@ -1,2 +1,4 @@
 bin/
+bacon-core
+cover.out
 coverage.out

@@ -1,0 +1,31 @@
+ARG VERSION=dev
+
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /src
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ .
+
+ARG VERSION
+RUN go build -ldflags="-s -w -X github.com/orlandoburli/feature-bacon/internal/api/middleware.Version=${VERSION}" \
+    -o /bacon-core ./cmd/bacon-core
+
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates && \
+    adduser -D -h /home/bacon bacon
+
+COPY --from=builder /bacon-core /bacon-core
+
+USER bacon
+
+ENV BACON_PERSISTENCE=file \
+    BACON_CONFIG_FILE=/etc/bacon/flags.yaml \
+    BACON_HTTP_ADDR=:8080
+
+EXPOSE 8080
+
+ENTRYPOINT ["/bacon-core"]
