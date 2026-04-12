@@ -93,14 +93,39 @@ The core SHALL fail startup if an **explicitly configured** publisher module is 
 - **THEN** startup fails with a descriptive error
 - **AND** the process exits with a non-zero code
 
+### Requirement: TenantIsolation
+
+Events SHALL always include the `tenantId` of the originating tenant. Publisher modules MUST NOT mix events from different tenants into shared channels unless the operator explicitly configures shared topics/queues. The core SHALL pass `tenantId` on every `Publish` call.
+
+#### Scenario: TenantInEvent
+- **GIVEN** a flag change event for tenant `acme`
+- **WHEN** the core calls `Publish`
+- **THEN** the event payload contains `tenant_id: acme`
+
+#### Scenario: PerTenantTopicRouting
+- **GIVEN** the operator configures per-tenant topic routing (e.g. `bacon-events-acme`, `bacon-events-globex`)
+- **WHEN** an event for tenant `acme` is published
+- **THEN** the publisher module routes it to `bacon-events-acme`
+
+#### Scenario: SharedTopicWithTenantField
+- **GIVEN** the operator configures a shared topic for all tenants
+- **WHEN** events for multiple tenants are published
+- **THEN** each event carries its `tenant_id` so downstream consumers can filter by tenant
+
 ### Requirement: StandardEventEnvelope
 
-All events sent via `Publish` SHALL follow a shared envelope schema so publisher modules and downstream consumers do not need event-type-specific parsing.
+All events sent via `Publish` SHALL follow a shared envelope schema so publisher modules and downstream consumers do not need event-type-specific parsing. The `tenant_id` field is **mandatory** in every event.
 
 #### Scenario: EventShape
-- **GIVEN** a flag definition update event
+- **GIVEN** a flag definition update event for tenant `acme`
 - **WHEN** the core calls `Publish`
-- **THEN** the payload includes at minimum: event type, timestamp, tenant id, and domain-specific data as a JSON payload
+- **THEN** the payload includes at minimum: `event_type`, `timestamp`, `tenant_id`, and domain-specific data as a JSON payload
+
+#### Scenario: MissingTenantRejected
+- **GIVEN** an internal bug produces an event without `tenant_id`
+- **WHEN** the core attempts to publish
+- **THEN** the event is rejected before reaching the publisher module
+- **AND** an error is logged
 
 ### Requirement: ModuleHealthChecks
 

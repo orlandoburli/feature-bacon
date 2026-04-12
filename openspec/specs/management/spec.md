@@ -10,7 +10,8 @@ Provides CRUD operations for flag and experiment definitions, rules, and environ
 
 | Property | Type | Description |
 |----------|------|-------------|
-| key | string | Unique identifier for the flag within a tenant/environment |
+| tenantId | string | Owning tenant; all queries and mutations are scoped by this field |
+| key | string | Unique identifier for the flag within a tenant + environment |
 | name | string | Human-readable display name |
 | description | string | Purpose and context for the flag |
 | type | enum | `boolean`, `variant` |
@@ -20,6 +21,8 @@ Provides CRUD operations for flag and experiment definitions, rules, and environ
 | defaultResult | Result | Fallback when no rule matches |
 | persistenceTTL | duration | TTL for persisted assignments (when semantics = persistent) |
 | environments | []string | Environments where this flag is active |
+| createdBy | string | Identity of the actor who created the definition |
+| updatedBy | string | Identity of the actor who last modified the definition |
 
 ### Rule
 
@@ -60,14 +63,47 @@ The system SHALL support per-environment flag definitions so that the same flag 
 - **WHEN** evaluation is requested with environment `staging`
 - **THEN** the staging rules (100%) are used
 
+### Requirement: TenantResolution
+
+Every management request SHALL resolve a `tenantId` before processing. API keys, JWT claims, or headers determine the tenant. All CRUD operations are scoped to the resolved tenant.
+
+#### Scenario: TenantFromAPIKey
+- **GIVEN** management API key `mgmt_key_acme` bound to tenant `acme`
+- **WHEN** a list-flags request uses this key
+- **THEN** only flags belonging to tenant `acme` are returned
+
+#### Scenario: MissingTenant
+- **GIVEN** a multi-tenant deployment
+- **WHEN** a management request arrives with no resolvable tenant
+- **THEN** the request is rejected with `401 Unauthorized`
+
+### Requirement: TenantIsolation
+
+Management operations MUST NOT cross tenant boundaries. A management key for tenant A MUST NOT be able to read, create, update, or delete resources belonging to tenant B.
+
+#### Scenario: CrossTenantDenied
+- **GIVEN** admin with management key for tenant `acme`
+- **WHEN** they attempt to update a flag belonging to tenant `globex`
+- **THEN** the request is rejected with `403 Forbidden`
+
+#### Scenario: ListScopedToTenant
+- **GIVEN** tenants `acme` and `globex` each have flags
+- **WHEN** tenant `acme` lists all flags
+- **THEN** only `acme`'s flags are returned
+
 ### Requirement: Authentication
 
-The system SHALL authenticate all management requests. Evaluation and management MUST use separate authorization scopes or API keys.
+The system SHALL authenticate all management requests. Evaluation and management MUST use separate authorization scopes or API keys. API keys SHALL be bound to a specific tenant.
 
 #### Scenario: UnauthorizedManagement
 - **GIVEN** a request with an evaluation-only API key
 - **WHEN** a flag creation request is made
 - **THEN** the request is rejected with 403 Forbidden
+
+#### Scenario: APIKeyTenantBinding
+- **GIVEN** a management API key created for tenant `acme`
+- **WHEN** used in a request
+- **THEN** the key resolves to tenant `acme` and all operations are scoped accordingly
 
 ### Requirement: AuditTrail
 

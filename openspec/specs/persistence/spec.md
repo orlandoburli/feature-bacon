@@ -45,7 +45,7 @@ Not all features are available when using the read-only config file. The followi
 | **Flag CRUD via API / UI** | Yes | **No** — definitions are read from the file; the management API and UI operate in read-only mode |
 | **Audit trail** | Yes | **No** — no write path to record changes |
 | **Exposure / conversion event storage** | Via integration modules | Via integration modules (no persistence needed) |
-| Multi-tenant data isolation | Yes (scoped by tenant) | **Limited** — tenant scoping in the file structure is possible but must be defined statically |
+| Multi-tenant data isolation | Yes (scoped by `tenant_id` on every gRPC call) | **Limited** — tenant scoping via top-level keys in the file (e.g. one section per tenant) must be defined statically |
 | Runtime definition changes | Yes (via management API) | **No** — requires editing the file and restarting (or triggering a reload signal) |
 
 > **Operators MUST understand these limitations before choosing the config file mode.** Any flag with `semantics: persistent` or experiment with `stickyAssignment: true` will **not behave as specified** without a writable persistence module.
@@ -192,14 +192,19 @@ In multi-tenant mode with writable persistence, the core SHALL include `tenant_i
 Writable persistence modules SHALL store and retrieve persisted flag/experiment assignments with TTL metadata. This requirement does NOT apply to config file mode.
 
 #### Scenario: StoreAssignment
-- **GIVEN** a persistent flag evaluation for subject `user_456` with a writable module
-- **WHEN** the core calls `SaveAssignment` with the result and expiry timestamp
-- **THEN** the module persists the assignment
+- **GIVEN** a persistent flag evaluation for subject `user_456` under tenant `acme` with a writable module
+- **WHEN** the core calls `SaveAssignment` with `tenant_id`, subject, flag key, result, and expiry timestamp
+- **THEN** the module persists the assignment scoped to tenant `acme`
 
 #### Scenario: RetrieveAssignment
-- **GIVEN** a stored assignment for subject `user_456` on flag `onboarding_flow`
-- **WHEN** the core calls `GetAssignment` before TTL expires
+- **GIVEN** a stored assignment for tenant `acme`, subject `user_456`, flag `onboarding_flow`
+- **WHEN** the core calls `GetAssignment` with `tenant_id = acme` before TTL expires
 - **THEN** the persisted result is returned without recomputation
+
+#### Scenario: CrossTenantAssignmentPrevented
+- **GIVEN** an assignment stored for tenant `acme`, subject `user_456`, flag `onboarding_flow`
+- **WHEN** the core calls `GetAssignment` with `tenant_id = globex` for the same subject and flag
+- **THEN** the module returns not-found — tenant `acme`'s data is invisible to `globex`
 
 #### Scenario: ExpiredAssignment
 - **GIVEN** a stored assignment whose `expires_at_unix` is in the past

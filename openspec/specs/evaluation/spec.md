@@ -10,6 +10,7 @@ Evaluates feature flags for incoming requests using the evaluation context (user
 
 | Property | Type | Description |
 |----------|------|-------------|
+| tenantId | string | Resolved tenant identifier (from subdomain, header, JWT claim, or API key); implicit in sidecar mode |
 | subjectId | string | Primary identifier for the subject (user id, device id, anonymous id) |
 | environment | string | Target environment (e.g. `production`, `staging`, `dev`) |
 | attributes | map[string]any | Arbitrary key-value pairs (JWT claims, headers, IP, geo, custom) |
@@ -18,6 +19,7 @@ Evaluates feature flags for incoming requests using the evaluation context (user
 
 | Property | Type | Description |
 |----------|------|-------------|
+| tenantId | string | Tenant the evaluation was scoped to |
 | flagKey | string | The flag that was evaluated |
 | enabled | boolean | Whether the flag is on or off for this context |
 | variant | string | The resolved variant label (e.g. `control`, `variant_a`); empty when boolean-only |
@@ -85,6 +87,41 @@ The system SHALL check TTL/expiry on persisted assignments and recompute when th
 - **WHEN** evaluation is requested
 - **THEN** the expired assignment is discarded
 - **AND** a new assignment is computed and persisted
+
+### Requirement: TenantResolution
+
+Every evaluation request SHALL resolve a `tenantId` before processing. The tenant is derived from the request (subdomain, header, JWT claim, or API key mapping). In sidecar mode, the tenant is implicit. Requests with no resolvable tenant MUST be rejected.
+
+#### Scenario: TenantFromHeader
+- **GIVEN** a multi-tenant deployment
+- **WHEN** an evaluation request arrives with header `X-Tenant-Id: acme`
+- **THEN** the evaluation is scoped to tenant `acme`
+- **AND** only flag definitions belonging to `acme` are considered
+
+#### Scenario: TenantFromAPIKey
+- **GIVEN** a multi-tenant deployment and API key `key_abc` bound to tenant `acme`
+- **WHEN** an evaluation request uses `key_abc`
+- **THEN** the evaluation is scoped to tenant `acme`
+
+#### Scenario: MissingTenant
+- **GIVEN** a multi-tenant deployment
+- **WHEN** an evaluation request arrives with no resolvable tenant
+- **THEN** the request is rejected with `401 Unauthorized` or `400 Bad Request`
+
+#### Scenario: SidecarImplicitTenant
+- **GIVEN** a sidecar deployment
+- **WHEN** an evaluation request arrives
+- **THEN** the default implicit tenant is used without any resolution overhead
+
+### Requirement: TenantIsolation
+
+Evaluation SHALL only access flag definitions and persisted assignments belonging to the resolved tenant. A request scoped to tenant A MUST NOT see or receive results from tenant B.
+
+#### Scenario: CrossTenantPrevented
+- **GIVEN** tenant A has flag `dark_mode` enabled and tenant B has flag `dark_mode` disabled
+- **WHEN** evaluation is requested for `dark_mode` with `tenantId = A`
+- **THEN** the result is `enabled: true`
+- **AND** tenant B's definition is never consulted
 
 ### Requirement: UnknownOrDisabledFlagBehavior
 

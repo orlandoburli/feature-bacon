@@ -18,17 +18,22 @@ The system SHALL expose Prometheus-compatible metrics via an HTTP endpoint.
 #### Scenario: EvaluationCounters
 - **GIVEN** flags are being evaluated
 - **WHEN** metrics are scraped
-- **THEN** counters for `evaluations_total` are present, labeled by flag key, result, and environment
+- **THEN** counters for `evaluations_total` are present, labeled by **tenant**, flag key, result, and environment
 
 #### Scenario: ErrorCounters
 - **GIVEN** evaluation or management errors have occurred
 - **WHEN** metrics are scraped
-- **THEN** counters for `errors_total` are present, labeled by error type and domain
+- **THEN** counters for `errors_total` are present, labeled by **tenant**, error type, and domain
 
 #### Scenario: LatencyHistograms
 - **GIVEN** evaluation requests are being served
 - **WHEN** metrics are scraped
-- **THEN** histograms for `evaluation_duration_seconds` are present
+- **THEN** histograms for `evaluation_duration_seconds` are present, labeled by **tenant** and environment
+
+#### Scenario: PerTenantUsage
+- **GIVEN** tenants `acme` and `globex` are both active
+- **WHEN** metrics are scraped
+- **THEN** each counter and histogram carries a `tenant` label allowing per-tenant dashboards and alerting
 
 ### Requirement: StructuredLogging
 
@@ -38,6 +43,11 @@ The system SHALL emit structured logs (JSON or equivalent) suitable for aggregat
 - **GIVEN** an incoming API request with a trace or correlation id
 - **WHEN** the request is processed and logged
 - **THEN** all log entries for that request include the correlation id
+
+#### Scenario: TenantInLogs
+- **GIVEN** an incoming API request resolved to tenant `acme`
+- **WHEN** the request is processed and logged
+- **THEN** all log entries for that request include `tenant_id: acme`
 
 #### Scenario: NoPIIInLogs
 
@@ -63,7 +73,18 @@ The system SHALL expose a health endpoint reporting readiness and component-leve
 - **THEN** the response indicates the specific module is degraded
 - **AND** the overall status reflects partial availability (not fully down)
 
+### Requirement: TenantAwareMetrics
+
+All request-scoped metrics SHALL include a `tenant` label so operators can monitor usage, errors, and latency per tenant. In sidecar mode, the label carries the implicit default tenant.
+
+#### Scenario: HighCardinalityConsideration
+- **GIVEN** a SaaS deployment with hundreds of tenants
+- **WHEN** metrics are scraped
+- **THEN** the `tenant` label is present on key counters/histograms
+- **AND** operators MAY use relabeling or aggregation to manage cardinality
+
 ## Technical Notes
 
 - **Implementation**: Prometheus client library in Go; structured logger (e.g. `slog` or `zap`); health handler
+- **Tenant dimension**: All metrics and log entries carry `tenant_id`; in sidecar mode this is the implicit default tenant
 - **Dependencies**: all other domains contribute metrics and log entries; observability itself has no domain dependencies

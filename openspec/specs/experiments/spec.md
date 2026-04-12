@@ -10,7 +10,8 @@ Supports A/B and multivariate experiments: defining variants with traffic alloca
 
 | Property | Type | Description |
 |----------|------|-------------|
-| key | string | Unique experiment identifier |
+| tenantId | string | Owning tenant; all queries, mutations, and assignments are scoped by this field |
+| key | string | Unique experiment identifier within a tenant |
 | name | string | Human-readable name |
 | variants | []Variant | Two or more arms of the experiment |
 | allocation | []Allocation | Traffic split per variant (must sum to 100%) |
@@ -35,17 +36,31 @@ Supports A/B and multivariate experiments: defining variants with traffic alloca
 
 ### Requirement: ExperimentDefinition
 
-The system SHALL allow defining experiments with two or more variants and a traffic allocation that sums to 100%.
+The system SHALL allow defining experiments with two or more variants and a traffic allocation that sums to 100%. Experiments are always scoped to a tenant.
 
 #### Scenario: CreateExperiment
-- **GIVEN** an authenticated admin
+- **GIVEN** an authenticated admin for tenant `acme`
 - **WHEN** an experiment `checkout_redesign` is created with variants `control` (50%) and `redesign` (50%)
-- **THEN** the experiment is stored in `draft` status
+- **THEN** the experiment is stored in `draft` status under tenant `acme`
 
 #### Scenario: InvalidAllocation
 - **GIVEN** an experiment definition with allocations summing to 80%
 - **WHEN** creation is attempted
 - **THEN** the request is rejected with a validation error
+
+### Requirement: TenantIsolation
+
+Experiment definitions, assignments, and events SHALL be scoped by `tenantId`. A request for tenant A MUST NOT access experiments or assignments belonging to tenant B.
+
+#### Scenario: CrossTenantExperimentDenied
+- **GIVEN** tenant `acme` has experiment `checkout_redesign` and tenant `globex` does not
+- **WHEN** tenant `globex` requests evaluation of `checkout_redesign`
+- **THEN** the result indicates the experiment is not found
+
+#### Scenario: AssignmentsScopedByTenant
+- **GIVEN** subject `user_100` is assigned variant `control` in tenant `acme`'s experiment
+- **WHEN** tenant `globex` evaluates the same subject id in their own experiment with the same key
+- **THEN** tenant `acme`'s assignment is not visible and tenant `globex` assigns independently
 
 ### Requirement: StableAssignment
 
