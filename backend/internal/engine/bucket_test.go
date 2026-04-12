@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const subjectFmt = "subject_%d"
+
 func TestBucket_Deterministic(t *testing.T) {
 	b1 := Bucket("acme", "new_checkout", "user_123")
 	b2 := Bucket("acme", "new_checkout", "user_123")
@@ -16,7 +18,7 @@ func TestBucket_Deterministic(t *testing.T) {
 
 func TestBucket_Range(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		b := Bucket("tenant", "flag", fmt.Sprintf("subject_%d", i))
+		b := Bucket("tenant", "flag", fmt.Sprintf(subjectFmt, i))
 		if b < 0 || b > 99 {
 			t.Fatalf("Bucket out of range [0,99]: got %d", b)
 		}
@@ -38,7 +40,7 @@ func TestBucket_Distribution(t *testing.T) {
 	counts := make([]int, 100)
 
 	for i := 0; i < n; i++ {
-		b := Bucket("acme", "feature_x", fmt.Sprintf("subject_%d", i))
+		b := Bucket("acme", "feature_x", fmt.Sprintf(subjectFmt, i))
 		counts[b]++
 	}
 
@@ -61,7 +63,7 @@ func TestBucket_RolloutPercentageAccuracy(t *testing.T) {
 	inCount := 0
 
 	for i := 0; i < n; i++ {
-		if InRollout("acme", "feature_x", fmt.Sprintf("subject_%d", i), rollout) {
+		if InRollout("acme", "feature_x", fmt.Sprintf(subjectFmt, i), rollout) {
 			inCount++
 		}
 	}

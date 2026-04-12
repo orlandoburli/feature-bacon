@@ -106,7 +106,7 @@ func TestEvaluate_DeterministicRuleMatch(t *testing.T) {
 		Enabled:   true,
 		Rules: []Rule{
 			{
-				Conditions:        []Condition{{Attribute: "attributes.country", Operator: OpIn, Value: []any{"BR", "US"}}},
+				Conditions:        []Condition{{Attribute: attrCountry, Operator: OpIn, Value: []any{"BR", "US"}}},
 				RolloutPercentage: 100,
 				Variant:           "redesign",
 			},
@@ -143,7 +143,7 @@ func TestEvaluate_DefaultResult(t *testing.T) {
 		Enabled:   true,
 		Rules: []Rule{
 			{
-				Conditions:        []Condition{{Attribute: "attributes.country", Operator: OpEquals, Value: "US"}},
+				Conditions:        []Condition{{Attribute: attrCountry, Operator: OpEquals, Value: "US"}},
 				RolloutPercentage: 100,
 				Variant:           "redesign",
 			},

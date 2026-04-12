@@ -4,6 +4,11 @@ import (
 	"testing"
 )
 
+const (
+	attrCountry = "attributes.country"
+	attrVal     = "attributes.val"
+)
+
 func baseCtx() EvaluationContext {
 	return EvaluationContext{
 		TenantID:    "acme",
@@ -26,7 +31,7 @@ func baseCtx() EvaluationContext {
 
 func TestEvaluateCondition_Equals(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: OpEquals, Value: "BR"}
+	cond := Condition{Attribute: attrCountry, Operator: OpEquals, Value: "BR"}
 	if !EvaluateCondition(cond, ctx) {
 		t.Error("expected equals to match")
 	}
@@ -39,7 +44,7 @@ func TestEvaluateCondition_Equals(t *testing.T) {
 
 func TestEvaluateCondition_NotEquals(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: OpNotEquals, Value: "US"}
+	cond := Condition{Attribute: attrCountry, Operator: OpNotEquals, Value: "US"}
 	if !EvaluateCondition(cond, ctx) {
 		t.Error("expected not_equals to match")
 	}
@@ -52,7 +57,7 @@ func TestEvaluateCondition_NotEquals(t *testing.T) {
 
 func TestEvaluateCondition_In(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: OpIn, Value: []any{"BR", "US", "DE"}}
+	cond := Condition{Attribute: attrCountry, Operator: OpIn, Value: []any{"BR", "US", "DE"}}
 	if !EvaluateCondition(cond, ctx) {
 		t.Error("expected in to match")
 	}
@@ -65,7 +70,7 @@ func TestEvaluateCondition_In(t *testing.T) {
 
 func TestEvaluateCondition_InStringSlice(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: OpIn, Value: []string{"BR", "US"}}
+	cond := Condition{Attribute: attrCountry, Operator: OpIn, Value: []string{"BR", "US"}}
 	if !EvaluateCondition(cond, ctx) {
 		t.Error("expected in with string slice to match")
 	}
@@ -167,7 +172,7 @@ func TestEvaluateCondition_GreaterThan_IntTypes(t *testing.T) {
 			ctx := EvaluationContext{
 				Attributes: map[string]any{"val": tt.val},
 			}
-			cond := Condition{Attribute: "attributes.val", Operator: OpGreaterThan, Value: float64(10)}
+			cond := Condition{Attribute: attrVal, Operator: OpGreaterThan, Value: float64(10)}
 			if !EvaluateCondition(cond, ctx) {
 				t.Errorf("expected greater_than to match for %T", tt.val)
 			}
@@ -285,7 +290,7 @@ func TestEvaluateCondition_EmptySubjectId(t *testing.T) {
 
 func TestEvaluateCondition_UnknownOperator(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: "unknown_op", Value: "BR"}
+	cond := Condition{Attribute: attrCountry, Operator: "unknown_op", Value: "BR"}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected unknown operator to not match")
 	}
@@ -301,7 +306,7 @@ func TestEvaluateCondition_UnknownPath(t *testing.T) {
 
 func TestEvaluateCondition_InInvalidType(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.country", Operator: OpIn, Value: "not_a_slice"}
+	cond := Condition{Attribute: attrCountry, Operator: OpIn, Value: "not_a_slice"}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected non-slice value for in to not match")
 	}
@@ -311,7 +316,7 @@ func TestEvaluateCondition_NumericNonNumericValue(t *testing.T) {
 	ctx := EvaluationContext{
 		Attributes: map[string]any{"val": "not_a_number"},
 	}
-	cond := Condition{Attribute: "attributes.val", Operator: OpGreaterThan, Value: float64(10)}
+	cond := Condition{Attribute: attrVal, Operator: OpGreaterThan, Value: float64(10)}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected non-numeric attribute to not match greater_than")
 	}
@@ -321,7 +326,7 @@ func TestEvaluateCondition_NumericNonNumericExpected(t *testing.T) {
 	ctx := EvaluationContext{
 		Attributes: map[string]any{"val": float64(25)},
 	}
-	cond := Condition{Attribute: "attributes.val", Operator: OpGreaterThan, Value: "not_a_number"}
+	cond := Condition{Attribute: attrVal, Operator: OpGreaterThan, Value: "not_a_number"}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected non-numeric expected value to not match")
 	}
@@ -330,7 +335,7 @@ func TestEvaluateCondition_NumericNonNumericExpected(t *testing.T) {
 func TestAllConditionsMatch(t *testing.T) {
 	ctx := baseCtx()
 	conditions := []Condition{
-		{Attribute: "attributes.country", Operator: OpEquals, Value: "BR"},
+		{Attribute: attrCountry, Operator: OpEquals, Value: "BR"},
 		{Attribute: "attributes.plan", Operator: OpEquals, Value: "premium"},
 	}
 	if !AllConditionsMatch(conditions, ctx) {
@@ -338,7 +343,7 @@ func TestAllConditionsMatch(t *testing.T) {
 	}
 
 	conditions = append(conditions, Condition{
-		Attribute: "attributes.country", Operator: OpEquals, Value: "US",
+		Attribute: attrCountry, Operator: OpEquals, Value: "US",
 	})
 	if AllConditionsMatch(conditions, ctx) {
 		t.Error("expected not all conditions to match")
