@@ -1,0 +1,25 @@
+ARG VERSION=dev
+
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /src
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ .
+
+RUN go build -ldflags="-s -w" -o /module-postgres ./cmd/module-postgres
+
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates && \
+    adduser -D -h /home/bacon bacon
+
+COPY --from=builder /module-postgres /module-postgres
+
+USER bacon
+
+EXPOSE 50051
+
+ENTRYPOINT ["/module-postgres"]
