@@ -10,6 +10,10 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  COVERAGE_FAIL_THRESHOLD: 80
+  COVERAGE_WARN_THRESHOLD: 90
+
 jobs:
   lint-proto:
     name: Lint protobuf
@@ -50,14 +54,75 @@ jobs:
       - name: Run unit tests
         working-directory: backend
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      - name: Check coverage
+
+      - name: Parse coverage
+        id: coverage
         working-directory: backend
         run: |
-          go tool cover -func=coverage.out
-          echo "--- Coverage report generated ---"
+          COVERAGE_REPORT=$(go tool cover -func=coverage.out)
+          TOTAL=$(echo "$COVERAGE_REPORT" | grep '^total:' | awk '{print $NF}' | tr -d '%')
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "report<<REPORT_EOF" >> "$GITHUB_OUTPUT"
+          echo "$COVERAGE_REPORT" >> "$GITHUB_OUTPUT"
+          echo "REPORT_EOF" >> "$GITHUB_OUTPUT"
+
+          # Determine status
+          TOTAL_INT=${TOTAL%.*}
+          if [ "$TOTAL_INT" -lt "$COVERAGE_FAIL_THRESHOLD" ]; then
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "emoji=🔴" >> "$GITHUB_OUTPUT"
+          elif [ "$TOTAL_INT" -lt "$COVERAGE_WARN_THRESHOLD" ]; then
+            echo "status=warn" >> "$GITHUB_OUTPUT"
+            echo "emoji=🟡" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "emoji=🟢" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post coverage comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-backend
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Backend Coverage: ${{ steps.coverage.outputs.total }}%
+
+            | Threshold | Value | Status |
+            |-----------|-------|--------|
+            | Fail | < ${{ env.COVERAGE_FAIL_THRESHOLD }}% | ${{ steps.coverage.outputs.total >= env.COVERAGE_FAIL_THRESHOLD && '✅' || '❌' }} |
+            | Warn | < ${{ env.COVERAGE_WARN_THRESHOLD }}% | ${{ steps.coverage.outputs.total >= env.COVERAGE_WARN_THRESHOLD && '✅' || '⚠️' }} |
+
+            <details>
+            <summary>Coverage by function</summary>
+
+            ```
+            ${{ steps.coverage.outputs.report }}
+            ```
+
+            </details>
+
+      - name: Enforce coverage threshold
+        if: steps.coverage.outputs.status == 'fail'
+        run: |
+          echo "::error::Backend coverage ${{ steps.coverage.outputs.total }}% is below the minimum threshold of ${{ env.COVERAGE_FAIL_THRESHOLD }}%"
+          exit 1
+
+      - name: Warn on low coverage
+        if: steps.coverage.outputs.status == 'warn'
+        run: |
+          echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
+
       - name: SonarQube Scan
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+
+      - name: SonarQube Quality Gate
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
