@@ -53,7 +53,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Run unit tests
         working-directory: backend
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/... ./...
 
       - name: Parse coverage
         id: coverage
