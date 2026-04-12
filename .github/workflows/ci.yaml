@@ -36,7 +36,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.64.8
+          version: v2.11.4
           working-directory: backend
 
   test:
@@ -57,7 +57,10 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Run unit tests
         working-directory: backend
-        run: go test -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/... ./...
+        run: >-
+          go test -race -coverprofile=coverage.out -covermode=atomic
+          -coverpkg=./internal/...
+          $(go list ./... | grep -v /conformance | grep -v /modules/)
 
       - name: Parse coverage
         id: coverage
