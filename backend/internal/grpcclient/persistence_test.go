@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	fmtUnexpectedErr = "unexpected error: %v"
-	tenantDefault    = "_default"
-	flagDarkMode     = "dark-mode"
-	subjectUser1     = "user-1"
+	fmtUnexpectedErr  = "unexpected error: %v"
+	fmtExpectedKeyGot = "expected key %s, got %s"
+	tenantDefault     = "_default"
+	flagDarkMode      = "dark-mode"
+	subjectUser1      = "user-1"
 )
 
 type mockPersistenceServer struct {
@@ -60,7 +61,22 @@ func (m *mockPersistenceServer) ListFlags(_ context.Context, _ *pb.ListFlagsRequ
 			{Key: flagDarkMode},
 			{Key: "other-flag"},
 		},
+		Pagination: &pb.PageInfo{Total: 2, Page: 1, PerPage: 20, TotalPages: 1},
 	}, nil
+}
+
+func (m *mockPersistenceServer) CreateFlag(_ context.Context, req *pb.CreateFlagRequest) (*pb.CreateFlagResponse, error) {
+	req.Flag.CreatedAt = 1700000000
+	return &pb.CreateFlagResponse{Flag: req.Flag}, nil
+}
+
+func (m *mockPersistenceServer) UpdateFlag(_ context.Context, req *pb.UpdateFlagRequest) (*pb.UpdateFlagResponse, error) {
+	req.Flag.UpdatedAt = 1700000001
+	return &pb.UpdateFlagResponse{Flag: req.Flag}, nil
+}
+
+func (m *mockPersistenceServer) DeleteFlag(_ context.Context, _ *pb.DeleteFlagRequest) (*pb.DeleteFlagResponse, error) {
+	return &pb.DeleteFlagResponse{}, nil
 }
 
 func (m *mockPersistenceServer) GetAssignment(_ context.Context, req *pb.GetAssignmentRequest) (*pb.GetAssignmentResponse, error) {
@@ -116,7 +132,7 @@ func TestPersistenceClient_GetFlag(t *testing.T) {
 		t.Fatal("expected flag, got nil")
 	}
 	if flag.Key != flagDarkMode {
-		t.Errorf("expected key %s, got %s", flagDarkMode, flag.Key)
+		t.Errorf(fmtExpectedKeyGot, flagDarkMode, flag.Key)
 	}
 	if !flag.Enabled {
 		t.Error("expected enabled = true")
@@ -206,6 +222,90 @@ func TestPersistenceClient_Raw(t *testing.T) {
 
 	if client.Raw() == nil {
 		t.Error("expected Raw() to return non-nil client")
+	}
+}
+
+func TestPersistenceClient_GetFlagManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	flag, err := client.GetFlagManaged(context.Background(), tenantDefault, flagDarkMode)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if flag == nil {
+		t.Fatal("expected flag, got nil")
+	}
+	if flag.Key != flagDarkMode {
+		t.Errorf(fmtExpectedKeyGot, flagDarkMode, flag.Key)
+	}
+}
+
+func TestPersistenceClient_ListFlagsManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	flags, total, err := client.ListFlagsManaged(context.Background(), tenantDefault, 1, 20)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if len(flags) != 2 {
+		t.Fatalf("expected 2 flags, got %d", len(flags))
+	}
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
+	}
+}
+
+func TestPersistenceClient_CreateFlagManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	flag, err := client.CreateFlagManaged(context.Background(), tenantDefault, &pb.FlagDefinition{
+		Key:       flagDarkMode,
+		Type:      "boolean",
+		Semantics: "flag",
+		Enabled:   true,
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if flag.Key != flagDarkMode {
+		t.Errorf(fmtExpectedKeyGot, flagDarkMode, flag.Key)
+	}
+	if flag.CreatedAt != 1700000000 {
+		t.Errorf("expected CreatedAt 1700000000, got %d", flag.CreatedAt)
+	}
+}
+
+func TestPersistenceClient_UpdateFlagManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	flag, err := client.UpdateFlagManaged(context.Background(), tenantDefault, &pb.FlagDefinition{
+		Key:       flagDarkMode,
+		Type:      "boolean",
+		Semantics: "flag",
+		Enabled:   false,
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if flag.Key != flagDarkMode {
+		t.Errorf(fmtExpectedKeyGot, flagDarkMode, flag.Key)
+	}
+	if flag.UpdatedAt != 1700000001 {
+		t.Errorf("expected UpdatedAt 1700000001, got %d", flag.UpdatedAt)
+	}
+}
+
+func TestPersistenceClient_DeleteFlagManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	err := client.DeleteFlagManaged(context.Background(), tenantDefault, flagDarkMode)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
 	}
 }
 

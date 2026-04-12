@@ -2,11 +2,14 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
+	"github.com/orlandoburli/feature-bacon/internal/api/handlers"
 	"github.com/orlandoburli/feature-bacon/internal/auth"
 	"github.com/orlandoburli/feature-bacon/internal/engine"
 )
@@ -17,13 +20,42 @@ const (
 	headerRequestID   = "X-Request-Id"
 	requestIDCustom42 = "custom-id-42"
 	pathEvalEndpoint  = "/api/v1/evaluate"
+	headerContentType = "Content-Type"
+	contentTypeJSON   = "application/json"
+	pathAPIFlags      = "/api/v1/flags"
 )
+
+type stubFlagManager struct{}
+
+func (s *stubFlagManager) GetFlag(_ context.Context, _, flagKey string) (*pb.FlagDefinition, error) {
+	if flagKey == flagKeyTestFlag {
+		return &pb.FlagDefinition{Key: flagKeyTestFlag, Type: "boolean", Semantics: "flag", Enabled: true}, nil
+	}
+	return nil, nil
+}
+
+func (s *stubFlagManager) ListFlags(_ context.Context, _ string, _, _ int) ([]*pb.FlagDefinition, int, error) {
+	return []*pb.FlagDefinition{{Key: flagKeyTestFlag}}, 1, nil
+}
+
+func (s *stubFlagManager) CreateFlag(_ context.Context, _ string, f *pb.FlagDefinition) (*pb.FlagDefinition, error) {
+	return f, nil
+}
+
+func (s *stubFlagManager) UpdateFlag(_ context.Context, _ string, f *pb.FlagDefinition) (*pb.FlagDefinition, error) {
+	return f, nil
+}
+
+func (s *stubFlagManager) DeleteFlag(_ context.Context, _, _ string) error { return nil }
+
+var _ handlers.FlagManager = (*stubFlagManager)(nil)
 
 func testRouter(eng *engine.Engine) http.Handler {
 	return NewRouter(RouterConfig{
 		Engine:       eng,
 		AuthDisabled: true,
 		KeyStore:     auth.NewMemKeyStore(),
+		FlagManager:  &stubFlagManager{},
 	})
 }
 
@@ -87,7 +119,7 @@ func TestNewRouter_Evaluate(t *testing.T) {
 
 	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"user-1"}}`
 	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -110,7 +142,7 @@ func TestNewRouter_EvaluateBatch(t *testing.T) {
 
 	body := `{"flagKeys":["` + flagKeyTestFlag + `"],"context":{"subjectId":"user-1"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate/batch", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -188,5 +220,80 @@ func TestNewRouter_MethodNotAllowed(t *testing.T) {
 
 	if w.Code == http.StatusOK {
 		t.Error("expected non-200 for GET on POST-only route")
+	}
+}
+
+func TestNewRouter_ListFlags(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, pathAPIFlags, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_GetFlag(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/flags/"+flagKeyTestFlag, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_CreateFlag(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	body := `{"key":"new-flag","type":"boolean","semantics":"flag","enabled":true}`
+	req := httptest.NewRequest(http.MethodPost, pathAPIFlags, bytes.NewBufferString(body))
+	req.Header.Set(headerContentType, contentTypeJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusCreated)
+	}
+}
+
+func TestNewRouter_DeleteFlag(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/flags/"+flagKeyTestFlag, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusNoContent)
+	}
+}
+
+func TestNewRouter_ReadOnlyMode(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := NewRouter(RouterConfig{
+		Engine:       eng,
+		AuthDisabled: true,
+		KeyStore:     auth.NewMemKeyStore(),
+		FlagManager:  &stubFlagManager{},
+		ReadOnly:     true,
+	})
+
+	body := `{"key":"new-flag","type":"boolean","semantics":"flag","enabled":true}`
+	req := httptest.NewRequest(http.MethodPost, pathAPIFlags, bytes.NewBufferString(body))
+	req.Header.Set(headerContentType, contentTypeJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusConflict)
 	}
 }
