@@ -28,6 +28,16 @@ func Write(w http.ResponseWriter, p *Problem) {
 	_ = json.NewEncoder(w).Encode(p)
 }
 
+func BadRequest(detail, instance string) *Problem {
+	return &Problem{
+		Type:     typePrefix + "bad-request",
+		Title:    "Bad Request",
+		Status:   http.StatusBadRequest,
+		Detail:   detail,
+		Instance: instance,
+	}
+}
+
 func Unauthorized(detail, instance string) *Problem {
 	return &Problem{
 		Type:     typePrefix + "unauthorized",
