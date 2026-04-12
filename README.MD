@@ -44,6 +44,8 @@ graph TB
     apps -- "HTTP" --> api
 ```
 
+
+
 Each module is a **separate Docker image** implementing a standard gRPC service contract (`PersistenceService` or `PublisherService`). The core image contains no database drivers or broker SDKs.
 
 ## Evaluation lifecycle
@@ -76,64 +78,78 @@ sequenceDiagram
     api-->>client: {enabled, variant, reason}
 ```
 
+
+
 ## Flag types
 
-| Type | Behavior |
-|------|----------|
-| **Deterministic** | Same evaluation context always produces the same result (e.g. hash-based bucketing). |
-| **Random** | May return different results across calls; useful for random sampling. |
-| **Persistent** | Result is stored so the subject sees the same outcome until TTL expires or rules change. Requires a writable persistence module. |
+
+| Type              | Behavior                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Deterministic** | Same evaluation context always produces the same result (e.g. hash-based bucketing).                                             |
+| **Random**        | May return different results across calls; useful for random sampling.                                                           |
+| **Persistent**    | Result is stored so the subject sees the same outcome until TTL expires or rules change. Requires a writable persistence module. |
+
 
 ## Deployment modes
 
-| Mode | Description |
-|------|-------------|
+
+| Mode                    | Description                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | **SaaS (multi-tenant)** | One deployment serves many tenants. Tenant resolution on every request via subdomain, header, JWT claim, or API key. |
-| **Sidecar** | One instance dedicated to a single application. Implicit default tenant, minimal overhead. |
+| **Sidecar**             | One instance dedicated to a single application. Implicit default tenant, minimal overhead.                           |
+
 
 ## Persistence options
 
-| Backend | Type | Notes |
-|---------|------|-------|
-| **PostgreSQL** | Writable (gRPC module) | Full feature set including persistent assignments, CRUD, and audit. |
-| **Redis** | Writable (gRPC module) | Cache-oriented or sidecar deployments. |
-| **MongoDB** | Writable (gRPC module) | Document-oriented deployments. |
+
+| Backend         | Type                   | Notes                                                                                                                            |
+| --------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **PostgreSQL**  | Writable (gRPC module) | Full feature set including persistent assignments, CRUD, and audit.                                                              |
+| **Redis**       | Writable (gRPC module) | Cache-oriented or sidecar deployments.                                                                                           |
+| **MongoDB**     | Writable (gRPC module) | Document-oriented deployments.                                                                                                   |
 | **Config file** | Read-only (in-process) | Flags defined in YAML/JSON/TOML, managed as code. No database required. Persistent flags and sticky experiments are unavailable. |
+
 
 ## Integration options
 
-| Backend | Notes |
-|---------|-------|
-| **Apache Kafka** | Streaming / event log. |
-| **AWS SQS** | Queue-based. |
-| **GCP Pub/Sub** | Cloud messaging. |
+
+| Backend          | Notes                                            |
+| ---------------- | ------------------------------------------------ |
+| **Apache Kafka** | Streaming / event log.                           |
+| **AWS SQS**      | Queue-based.                                     |
+| **GCP Pub/Sub**  | Cloud messaging.                                 |
 | **Generic gRPC** | Forward events to any gRPC endpoint you control. |
+
 
 Multiple publishers can run in parallel for fan-out. Zero publishers is valid — events are silently discarded.
 
 ## Tech stack
 
-| Layer | Technology |
-|-------|------------|
-| Backend API + engine | **Go** |
-| Management UI | **React** with **Next.js** |
-| Inter-module communication | **gRPC** with **mTLS** |
-| Metrics | **Prometheus**-compatible |
+
+| Layer                      | Technology                       |
+| -------------------------- | -------------------------------- |
+| Backend API + engine       | **Go**                           |
+| Management UI              | **React** with **Next.js**       |
+| Inter-module communication | **gRPC** with **mTLS**           |
+| Metrics                    | **Prometheus**-compatible         |
+
 
 ## Specifications
 
-Full product and technical specs live in [`openspec/`](openspec/) following the OpenSpec format (RFC 2119 requirements, Given/When/Then scenarios, mermaid diagrams):
+Full product and technical specs live in `[openspec/](openspec/)` following the OpenSpec format (RFC 2119 requirements, Given/When/Then scenarios, mermaid diagrams):
 
-| Domain | Spec |
-|--------|------|
-| System overview | [overview/spec.md](openspec/specs/overview/spec.md) |
-| Flag evaluation | [evaluation/spec.md](openspec/specs/evaluation/spec.md) |
-| Flag management | [management/spec.md](openspec/specs/management/spec.md) |
-| A/B experiments | [experiments/spec.md](openspec/specs/experiments/spec.md) |
-| Persistence | [persistence/spec.md](openspec/specs/persistence/spec.md) |
-| Integrations | [integrations/spec.md](openspec/specs/integrations/spec.md) |
-| Observability | [observability/spec.md](openspec/specs/observability/spec.md) |
-| Architecture | [architecture/spec.md](openspec/specs/architecture/spec.md) |
+
+| Domain          | Spec                                                          |
+| --------------- | ------------------------------------------------------------- |
+| System overview | [overview/spec.md](openspec/specs/overview/spec.md)           |
+| Flag evaluation | [evaluation/spec.md](openspec/specs/evaluation/spec.md)       |
+| Flag management | [management/spec.md](openspec/specs/management/spec.md)       |
+| A/B experiments | [experiments/spec.md](openspec/specs/experiments/spec.md)     |
+| Persistence     | [persistence/spec.md](openspec/specs/persistence/spec.md)     |
+| Integrations    | [integrations/spec.md](openspec/specs/integrations/spec.md)   |
+| Observability   | [observability/spec.md](openspec/specs/observability/spec.md) |
+| Architecture    | [architecture/spec.md](openspec/specs/architecture/spec.md)   |
+
 
 ## Status
 
@@ -141,4 +157,12 @@ Early stage — specifications are in place, implementation is next. Contributio
 
 ## License
 
-[Apache 2.0](LICENSE)
+This project is dual-licensed:
+
+- **Open source** — [GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE). You can use, modify, and distribute Feature Bacon freely under the terms of the AGPL. If you run a modified version as a network service, you must make the source code of your modifications available to users of that service.
+
+- **Commercial** — A commercial license is available for organizations that cannot or prefer not to comply with the AGPL (e.g. proprietary SaaS offerings, embedding without source disclosure). Contact [orlando.burli@gmail.com](mailto:orlando.burli@gmail.com) for details.
+
+### Contributing
+
+Contributions are welcome. By submitting a pull request, you agree to license your contribution under the AGPL-3.0 and grant the project maintainers the right to distribute it under the commercial license as well (CLA).
