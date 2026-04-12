@@ -11,10 +11,10 @@ linters:
     - unused
     - misspell
     - revive
+  exclusions:
+    paths:
+      - gen
 formatters:
   enable:
     - gofmt
     - goimports
-issues:
-  exclude-dirs:
-    - gen
