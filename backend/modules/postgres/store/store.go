@@ -13,10 +13,6 @@ import (
 const (
 	defaultPerPage int32 = 20
 	maxPerPage     int32 = 100
-
-	flagCols       = `key, type, semantics, enabled, description, rules, default_result, created_by, updated_by, created_at, updated_at`
-	experimentCols = `key, name, status, sticky_assignment, variants, allocation, created_at, updated_at`
-	apiKeyCols     = `id, key_hash, key_prefix, scope, name, created_by, created_at, revoked_at`
 )
 
 type Store struct {
@@ -156,7 +152,8 @@ func marshalObj(v any) string {
 
 func (s *Store) GetFlag(ctx context.Context, req *pb.GetFlagRequest) (*pb.GetFlagResponse, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT `+flagCols+` FROM flags WHERE tenant_id = $1 AND key = $2`,
+		`SELECT key, type, semantics, enabled, description, rules, default_result, created_by, updated_by, created_at, updated_at
+		 FROM flags WHERE tenant_id = $1 AND key = $2`,
 		req.GetTenant().GetTenantId(), req.GetFlagKey(),
 	)
 	f, err := scanFlag(row)
@@ -183,7 +180,8 @@ func (s *Store) ListFlags(ctx context.Context, req *pb.ListFlagsRequest) (*pb.Li
 
 	offset := (page - 1) * perPage
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT `+flagCols+` FROM flags WHERE tenant_id = $1 ORDER BY key LIMIT $2 OFFSET $3`,
+		`SELECT key, type, semantics, enabled, description, rules, default_result, created_by, updated_by, created_at, updated_at
+		 FROM flags WHERE tenant_id = $1 ORDER BY key LIMIT $2 OFFSET $3`,
 		tid, perPage, offset,
 	)
 	if err != nil {
@@ -216,7 +214,7 @@ func (s *Store) CreateFlag(ctx context.Context, req *pb.CreateFlagRequest) (*pb.
 	row := s.db.QueryRowContext(ctx,
 		`INSERT INTO flags (tenant_id, key, type, semantics, enabled, description, rules, default_result, created_by, updated_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10)
-		 RETURNING `+flagCols,
+		 RETURNING key, type, semantics, enabled, description, rules, default_result, created_by, updated_by, created_at, updated_at`,
 		tid, f.GetKey(), f.GetType(), f.GetSemantics(), f.GetEnabled(),
 		f.GetDescription(), marshalSlice(f.GetRules()), marshalObj(f.GetDefaultResult()),
 		f.GetCreatedBy(), f.GetUpdatedBy(),
@@ -237,7 +235,7 @@ func (s *Store) UpdateFlag(ctx context.Context, req *pb.UpdateFlagRequest) (*pb.
 		 SET type = $1, semantics = $2, enabled = $3, description = $4,
 		     rules = $5::jsonb, default_result = $6::jsonb, updated_by = $7, updated_at = now()
 		 WHERE tenant_id = $8 AND key = $9
-		 RETURNING `+flagCols,
+		 RETURNING key, type, semantics, enabled, description, rules, default_result, created_by, updated_by, created_at, updated_at`,
 		f.GetType(), f.GetSemantics(), f.GetEnabled(), f.GetDescription(),
 		marshalSlice(f.GetRules()), marshalObj(f.GetDefaultResult()),
 		f.GetUpdatedBy(), tid, f.GetKey(),
@@ -327,7 +325,8 @@ func (s *Store) SaveAssignment(ctx context.Context, req *pb.SaveAssignmentReques
 
 func (s *Store) GetExperiment(ctx context.Context, req *pb.GetExperimentRequest) (*pb.GetExperimentResponse, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT `+experimentCols+` FROM experiments WHERE tenant_id = $1 AND key = $2`,
+		`SELECT key, name, status, sticky_assignment, variants, allocation, created_at, updated_at
+		 FROM experiments WHERE tenant_id = $1 AND key = $2`,
 		req.GetTenant().GetTenantId(), req.GetExperimentKey(),
 	)
 	e, err := scanExperiment(row)
@@ -354,7 +353,8 @@ func (s *Store) ListExperiments(ctx context.Context, req *pb.ListExperimentsRequ
 
 	offset := (page - 1) * perPage
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT `+experimentCols+` FROM experiments WHERE tenant_id = $1 ORDER BY key LIMIT $2 OFFSET $3`,
+		`SELECT key, name, status, sticky_assignment, variants, allocation, created_at, updated_at
+		 FROM experiments WHERE tenant_id = $1 ORDER BY key LIMIT $2 OFFSET $3`,
 		tid, perPage, offset,
 	)
 	if err != nil {
@@ -387,7 +387,7 @@ func (s *Store) CreateExperiment(ctx context.Context, req *pb.CreateExperimentRe
 	row := s.db.QueryRowContext(ctx,
 		`INSERT INTO experiments (tenant_id, key, name, status, sticky_assignment, variants, allocation)
 		 VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
-		 RETURNING `+experimentCols,
+		 RETURNING key, name, status, sticky_assignment, variants, allocation, created_at, updated_at`,
 		tid, e.GetKey(), e.GetName(), e.GetStatus(), e.GetStickyAssignment(),
 		marshalSlice(e.GetVariants()), marshalSlice(e.GetAllocation()),
 	)
@@ -407,7 +407,7 @@ func (s *Store) UpdateExperiment(ctx context.Context, req *pb.UpdateExperimentRe
 		 SET name = $1, status = $2, sticky_assignment = $3,
 		     variants = $4::jsonb, allocation = $5::jsonb, updated_at = now()
 		 WHERE tenant_id = $6 AND key = $7
-		 RETURNING `+experimentCols,
+		 RETURNING key, name, status, sticky_assignment, variants, allocation, created_at, updated_at`,
 		e.GetName(), e.GetStatus(), e.GetStickyAssignment(),
 		marshalSlice(e.GetVariants()), marshalSlice(e.GetAllocation()),
 		tid, e.GetKey(),
@@ -470,7 +470,8 @@ func (s *Store) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*p
 
 	offset := (page - 1) * perPage
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT `+apiKeyCols+` FROM api_keys WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+		`SELECT id, key_hash, key_prefix, scope, name, created_by, created_at, revoked_at
+		 FROM api_keys WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		tid, perPage, offset,
 	)
 	if err != nil {
@@ -503,7 +504,7 @@ func (s *Store) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (
 	row := s.db.QueryRowContext(ctx,
 		`INSERT INTO api_keys (id, tenant_id, key_hash, key_prefix, scope, name, created_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING `+apiKeyCols,
+		 RETURNING id, key_hash, key_prefix, scope, name, created_by, created_at, revoked_at`,
 		k.GetId(), tid, k.GetKeyHash(), k.GetKeyPrefix(), k.GetScope(), k.GetName(), k.GetCreatedBy(),
 	)
 	result, err := scanAPIKey(row)
