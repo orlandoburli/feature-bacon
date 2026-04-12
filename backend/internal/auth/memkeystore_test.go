@@ -14,7 +14,7 @@ func TestMemKeyStore_AddAndLookup(t *testing.T) {
 	}
 	store.Add(key)
 
-	found, err := store.LookupByHash(HashKey(raw))
+	found, err := store.Find(HashKey(raw))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestMemKeyStore_AddAndLookup(t *testing.T) {
 func TestMemKeyStore_LookupNotFound(t *testing.T) {
 	store := NewMemKeyStore()
 
-	found, err := store.LookupByHash(HashKey("nonexistent"))
+	found, err := store.Find(HashKey("nonexistent"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

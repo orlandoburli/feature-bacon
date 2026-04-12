@@ -4,13 +4,13 @@ import "fmt"
 
 // AuthenticateAPIKey hashes the raw key, looks it up, and validates it is active.
 // Returns the matched APIKey or an error describing the failure.
-func AuthenticateAPIKey(store KeyLookup, rawKey string) (*APIKey, error) {
+func AuthenticateAPIKey(store KeyFinder, rawKey string) (*APIKey, error) {
 	if store == nil {
 		return nil, fmt.Errorf("no API key store configured")
 	}
 
 	hash := HashKey(rawKey)
-	key, err := store.LookupByHash(hash)
+	key, err := store.Find(hash)
 	if err != nil {
 		return nil, fmt.Errorf("key lookup failed: %w", err)
 	}

@@ -35,7 +35,7 @@ func Prefix(raw string) string {
 	return raw[:8]
 }
 
-// KeyLookup provides read access to API keys by hash.
-type KeyLookup interface {
-	LookupByHash(hash string) (*APIKey, error)
+// KeyFinder provides read access to API keys by hash.
+type KeyFinder interface {
+	Find(hash string) (*APIKey, error)
 }
