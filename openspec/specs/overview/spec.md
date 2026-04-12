@@ -8,12 +8,17 @@ Feature Bacon is a feature-flag and experimentation platform that centralizes fl
 
 | Domain | Description | Spec |
 |--------|-------------|------|
-| evaluation | Flag evaluation engine and API | [spec.md](../evaluation/spec.md) |
-| management | Flag and experiment CRUD, authorization | [spec.md](../management/spec.md) |
+| evaluation | Flag evaluation engine, rules, bucketing | [spec.md](../evaluation/spec.md) |
+| management | Flag and experiment CRUD | [spec.md](../management/spec.md) |
 | experiments | A/B and multivariate testing | [spec.md](../experiments/spec.md) |
-| persistence | Pluggable data stores for definitions and assignments | [spec.md](../persistence/spec.md) |
+| persistence | Pluggable data stores and config file mode | [spec.md](../persistence/spec.md) |
 | integrations | Outbound event publishing to external systems | [spec.md](../integrations/spec.md) |
 | observability | Metrics, structured logging, health | [spec.md](../observability/spec.md) |
+| api | HTTP API surface, endpoints, RFC 7807 errors | [spec.md](../api/spec.md) |
+| auth | API key lifecycle, JWT validation, tenant resolution | [spec.md](../auth/spec.md) |
+| grpc-contracts | PersistenceService and PublisherService proto definitions | [spec.md](../grpc-contracts/spec.md) |
+| architecture | Technology stack, repo layout, deployment, testing | [spec.md](../architecture/spec.md) |
+| implementation-plan | Phased roadmap, milestones, tasks, acceptance criteria | [spec.md](../implementation-plan/spec.md) |
 
 ## Requirements
 
@@ -53,12 +58,17 @@ The system SHALL support execution as a **standalone multi-tenant application** 
 ```mermaid
 graph TB
     subgraph core["bacon-core"]
-        evaluation["Evaluation"]
+        api["API<br/>(HTTP endpoints)"]
+        auth["Auth<br/>(API key / JWT)"]
+        evaluation["Evaluation<br/>(rules engine)"]
         management["Management"]
         experiments["Experiments"]
         observability["Observability"]
-        evaluation --- experiments
+        api --> auth
+        auth --> evaluation
+        auth --> management
         management --> evaluation
+        evaluation --- experiments
     end
 
     subgraph modules["Out-of-process modules (gRPC + mTLS)"]
@@ -66,10 +76,16 @@ graph TB
         integrations["Integrations<br/>(Kafka / SQS / PubSub / gRPC)"]
     end
 
-    evaluation -- "read definitions<br/>read/write assignments" --> persistence
-    management -- "write definitions" --> persistence
-    management -- "change events" --> integrations
-    experiments -- "exposure/conversion events" --> integrations
+    subgraph contracts["gRPC Contracts"]
+        proto["PersistenceService<br/>PublisherService"]
+    end
+
+    evaluation -- "read definitions<br/>read/write assignments" --> proto
+    management -- "write definitions" --> proto
+    management -- "change events" --> proto
+    experiments -- "exposure/conversion events" --> proto
+    proto --> persistence
+    proto --> integrations
     observability -. "health checks" .-> persistence
     observability -. "health checks" .-> integrations
 ```

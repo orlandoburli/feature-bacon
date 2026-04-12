@@ -235,13 +235,213 @@ graph TB
     modredis --> redis
 ```
 
+## Repository layout
+
+```
+feature-bacon/
+├── README.MD
+├── LICENSE
+├── openspec/                      # Specifications (this document tree)
+│   ├── config.yaml
+│   └── specs/
+│       └── ...
+├── proto/                         # Protobuf definitions
+│   └── bacon/
+│       └── v1/
+│           ├── persistence.proto
+│           └── publisher.proto
+├── backend/                       # All Go code
+│   ├── go.mod
+│   ├── go.work                    # Go workspace (multi-module)
+│   ├── cmd/
+│   │   ├── bacon-core/            # Main entrypoint for the core
+│   │   │   └── main.go
+│   │   ├── module-postgres/       # Main entrypoint for postgres module
+│   │   │   └── main.go
+│   │   ├── module-redis/
+│   │   │   └── main.go
+│   │   ├── module-mongo/
+│   │   │   └── main.go
+│   │   ├── module-kafka/
+│   │   │   └── main.go
+│   │   ├── module-sqs/
+│   │   │   └── main.go
+│   │   ├── module-pubsub/
+│   │   │   └── main.go
+│   │   └── module-grpc/
+│   │       └── main.go
+│   ├── internal/
+│   │   ├── engine/                # Evaluation engine, rules, bucketing
+│   │   │   ├── engine.go
+│   │   │   ├── rules.go
+│   │   │   ├── bucket.go
+│   │   │   └── engine_test.go
+│   │   ├── api/                   # HTTP handlers, middleware, router
+│   │   │   ├── router.go
+│   │   │   ├── middleware/
+│   │   │   │   ├── auth.go
+│   │   │   │   ├── tenant.go
+│   │   │   │   └── correlation.go
+│   │   │   ├── handlers/
+│   │   │   │   ├── evaluate.go
+│   │   │   │   ├── flags.go
+│   │   │   │   ├── experiments.go
+│   │   │   │   ├── apikeys.go
+│   │   │   │   └── health.go
+│   │   │   └── problem/           # RFC 7807 error helpers
+│   │   │       └── problem.go
+│   │   ├── auth/                  # API key hashing, JWT validation
+│   │   │   ├── apikey.go
+│   │   │   └── jwt.go
+│   │   ├── config/                # Config loading, env, file
+│   │   │   └── config.go
+│   │   ├── configfile/            # Config file persistence (in-process)
+│   │   │   └── loader.go
+│   │   ├── grpcclient/            # gRPC client wrappers for modules
+│   │   │   ├── persistence.go
+│   │   │   └── publisher.go
+│   │   └── tenant/                # Tenant resolution logic
+│   │       └── resolver.go
+│   ├── gen/                       # Generated protobuf Go code
+│   │   └── proto/
+│   │       └── bacon/
+│   │           └── v1/
+│   └── modules/                   # Module-specific server implementations
+│       ├── postgres/
+│       │   ├── server.go
+│       │   └── migrations/
+│       ├── redis/
+│       │   └── server.go
+│       ├── mongo/
+│       │   └── server.go
+│       ├── kafka/
+│       │   └── server.go
+│       ├── sqs/
+│       │   └── server.go
+│       ├── pubsub/
+│       │   └── server.go
+│       └── grpc/
+│           └── server.go
+├── frontend/                      # Management UI
+│   ├── package.json
+│   ├── next.config.js
+│   ├── src/
+│   │   ├── app/                   # Next.js App Router
+│   │   ├── components/
+│   │   └── lib/
+│   └── public/
+├── deploy/                        # Deployment manifests
+│   ├── docker/
+│   │   ├── Dockerfile.core
+│   │   ├── Dockerfile.module
+│   │   ├── Dockerfile.frontend
+│   │   └── docker-compose.yaml
+│   └── k8s/                       # Kubernetes manifests (future)
+├── certs/                         # Development mTLS certificates
+│   └── README.md
+├── buf.yaml                       # Buf configuration for proto linting/generation
+├── buf.gen.yaml                   # Buf code generation config
+├── Makefile                       # Build, test, generate, lint targets
+└── .github/
+    └── workflows/
+        ├── ci.yaml                # Lint, test, build
+        └── release.yaml
+```
+
+### Layout principles
+
+- **One Go module** at `backend/go.mod` using a Go workspace (`go.work`) to manage core and module binaries.
+- **`cmd/`** holds only main packages; no business logic.
+- **`internal/`** is the core's private code — engine, API, auth, config.
+- **`modules/`** holds the gRPC server implementations for each persistence/integration backend. Each module imports only its own driver SDK.
+- **`proto/`** is the shared source of truth for gRPC contracts; `gen/` is generated and git-ignored (or committed for convenience).
+- **`frontend/`** is a standalone Next.js app.
+- **`deploy/`** keeps all container and orchestration config separate from source code.
+
+## Testing strategy
+
+### Approach: shared conformance suite + module-specific tests
+
+```mermaid
+graph TB
+    subgraph conformance["Shared conformance suite (Go test package)"]
+        tc1["Flag CRUD scenarios"]
+        tc2["Assignment read/write"]
+        tc3["Experiment lifecycle"]
+        tc4["API key lookup"]
+        tc5["Publisher delivery"]
+    end
+
+    subgraph modules["Module test targets"]
+        pg["module-postgres<br/>(+ testcontainers)"]
+        redis["module-redis<br/>(+ testcontainers)"]
+        mongo["module-mongo<br/>(+ testcontainers)"]
+        kafka["module-kafka<br/>(+ testcontainers)"]
+    end
+
+    conformance --> pg
+    conformance --> redis
+    conformance --> mongo
+    conformance --> kafka
+```
+
+### Test layers
+
+| Layer | What | Tool | Runs in CI |
+|-------|------|------|:----------:|
+| **Unit** | Engine, rules, bucketing, auth, config parsing | `go test` (pure Go, no I/O) | Yes |
+| **Conformance** | A shared Go test package that exercises `PersistenceService` and `PublisherService` RPCs against any module implementation | `go test` + [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Yes |
+| **Module-specific** | Driver-level edge cases (e.g. Postgres migration rollback, Redis TTL behavior) | `go test` + testcontainers | Yes |
+| **Integration** | Full core ↔ module(s) over real gRPC + mTLS with docker compose | `docker compose` + test runner | Yes (CI with Docker) |
+| **Frontend** | Component and E2E tests for the management UI | Jest / Playwright | Yes |
+
+### Conformance suite details
+
+The conformance package (`backend/internal/conformance/`) defines test functions that accept a `PersistenceService` or `PublisherService` gRPC client:
+
+- `TestFlagCRUD(t, client)` — create, read, update, delete, list flags
+- `TestAssignmentReadWrite(t, client)` — save and retrieve assignments, TTL expiry
+- `TestExperimentLifecycle(t, client)` — create, update status transitions
+- `TestAPIKeyLifecycle(t, client)` — create, lookup by hash, revoke
+- `TestPublish(t, client)` — publish single event, verify accepted
+- `TestPublishBatch(t, client)` — batch publish, partial failure handling
+
+Each module test suite spins up the real backing service via testcontainers, starts the module gRPC server, and runs the conformance functions. This guarantees every module passes the same contract tests.
+
+### Requirements
+
+#### Requirement: ConformanceSuite
+
+Every persistence and publisher module SHALL pass the shared conformance test suite before it is considered ready for release.
+
+##### Scenario: NewModuleMustConform
+- **GIVEN** a new persistence module for CockroachDB
+- **WHEN** the conformance suite is executed against it
+- **THEN** all conformance tests must pass
+- **AND** any module-specific tests must also pass
+
+#### Requirement: UnitTestCoverage
+
+Engine, rules, and bucketing packages SHALL maintain **≥90%** line coverage in unit tests. Auth and config packages SHALL maintain **≥80%**.
+
+##### Scenario: BucketingProperty
+- **GIVEN** the bucketing function with MurmurHash3
+- **WHEN** tested with 100,000 random inputs
+- **THEN** the distribution across 100 buckets is uniform (chi-squared test, p > 0.01)
+
+#### Requirement: IntegrationTestInCI
+
+CI SHALL run the full integration test (core + at least one persistence module + one publisher module) using docker compose on every push to the main branch.
+
 ## Technical Notes
 
 - **Backend language**: Go
 - **Frontend framework**: React with Next.js
 - **Inter-module communication**: gRPC with mTLS on a private container network
-- **Proto contracts**: `PersistenceService`, `PublisherService` — defined in a shared `proto/` directory
+- **Proto contracts**: `PersistenceService`, `PublisherService` — defined in `proto/bacon/v1/`
+- **Code generation**: buf (`buf.yaml`, `buf.gen.yaml`)
 - **Dependency direction**: Handlers → Engine → gRPC Clients → (network) → Module gRPC Servers
 - **Persistence modules**: PostgreSQL, Redis, MongoDB (each a separate image)
 - **Integration modules**: Kafka, SQS, GCP Pub/Sub, generic gRPC (each a separate image)
 - **Deployment**: Container-based; one image for core, one image per module, one image for UI
+- **Testing**: shared conformance suite, testcontainers for real backing services

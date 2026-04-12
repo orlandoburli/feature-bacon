@@ -96,6 +96,106 @@ The system SHALL support a **read-only config file** as a persistence source. Fl
 - **WHEN** a management API request attempts to create, update, or delete a flag
 - **THEN** the request is rejected with a clear error indicating read-only mode
 
+### Requirement: ConfigFileSchema
+
+The config file SHALL support two layout options: a **single file** with top-level tenant keys, or a **directory** with one file per tenant. The format uses the same entity model as the management API (FlagDefinition, Experiment).
+
+#### Single-file layout
+
+When `BACON_CONFIG_FILE` points to a file, tenants are top-level keys:
+
+```yaml
+# /etc/bacon/flags.yaml
+tenants:
+  acme:
+    flags:
+      - key: dark_mode
+        type: boolean
+        semantics: deterministic
+        enabled: true
+        rules:
+          - conditions:
+              - attribute: attributes.plan
+                operator: equals
+                value: "premium"
+            rolloutPercentage: 100
+            variant: ""
+        defaultResult:
+          enabled: false
+          variant: ""
+
+      - key: checkout_redesign
+        type: variant
+        semantics: deterministic
+        enabled: true
+        rules:
+          - conditions: []
+            rolloutPercentage: 50
+            variant: redesign
+        defaultResult:
+          enabled: true
+          variant: control
+
+    experiments:
+      - key: onboarding_flow
+        name: Onboarding A/B
+        status: running
+        stickyAssignment: false
+        variants:
+          - key: control
+            description: Current flow
+          - key: new_flow
+            description: Redesigned flow
+        allocation:
+          - variantKey: control
+            percentage: 50
+          - variantKey: new_flow
+            percentage: 50
+
+  globex:
+    flags:
+      - key: dark_mode
+        type: boolean
+        semantics: deterministic
+        enabled: false
+        rules: []
+        defaultResult:
+          enabled: false
+          variant: ""
+```
+
+#### Directory layout
+
+When `BACON_CONFIG_FILE` points to a directory, each file is named `{tenantId}.yaml` (or `.json` / `.toml`):
+
+```
+/etc/bacon/flags/
+├── acme.yaml       # contains flags: [...] and experiments: [...]
+└── globex.yaml
+```
+
+Each file has the same structure as the tenant value in the single-file layout (i.e. `flags:` and `experiments:` at the top level, no tenant wrapper).
+
+#### Scenario: SingleFileMultiTenant
+- **GIVEN** `BACON_CONFIG_FILE=/etc/bacon/flags.yaml` pointing to a single file
+- **WHEN** the core starts
+- **THEN** each top-level key under `tenants:` is loaded as a separate tenant
+
+#### Scenario: DirectoryMultiTenant
+- **GIVEN** `BACON_CONFIG_FILE=/etc/bacon/flags/` pointing to a directory
+- **WHEN** the core starts
+- **THEN** each file in the directory is loaded as a separate tenant (filename = tenantId)
+
+#### Scenario: SidecarSingleTenant
+- **GIVEN** sidecar mode with a single-file config
+- **WHEN** the file has only one tenant key (or no `tenants:` wrapper)
+- **THEN** the core loads it under the implicit default tenant
+
+#### Scenario: ValidationOnLoad
+- **GIVEN** a config file with a flag missing the required `key` field
+- **WHEN** the core starts
+- **THEN** startup fails with an error identifying the malformed entry
+
 ### Requirement: ConfigFileLimitations
 
 When using config file persistence, the core SHALL clearly communicate degraded behavior for features that require write access.

@@ -158,6 +158,95 @@ The evaluation engine SHALL detect whether the active persistence is read-only (
 - **THEN** the flag is evaluated as if `semantics` were its underlying type (deterministic or random)
 - **AND** a warning-level log entry is emitted on first occurrence per flag key
 
+## Rules engine
+
+### Condition model
+
+A `Condition` tests a single attribute from the evaluation context against a value using an operator.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| attribute | string | Dot-path into the evaluation context (e.g. `attributes.country`, `subjectId`, `environment`) |
+| operator | enum | One of the supported operators below |
+| value | any | The operand to compare against; type depends on operator |
+
+### Supported operators
+
+| Operator | Description | Value type | Example |
+|----------|-------------|------------|---------|
+| `equals` | Exact match (string, number, boolean) | scalar | `country equals "BR"` |
+| `not_equals` | Negation of equals | scalar | `plan not_equals "free"` |
+| `in` | Attribute is one of the listed values | []scalar | `country in ["BR", "US", "DE"]` |
+| `not_in` | Attribute is not in the list | []scalar | `role not_in ["bot", "internal"]` |
+| `contains` | String attribute contains substring | string | `email contains "@acme.com"` |
+| `starts_with` | String attribute starts with prefix | string | `path starts_with "/v2/"` |
+| `ends_with` | String attribute ends with suffix | string | `hostname ends_with ".internal"` |
+| `greater_than` | Numeric comparison (>) | number | `age greater_than 18` |
+| `less_than` | Numeric comparison (<) | number | `cart_total less_than 100` |
+| `regex` | Attribute matches a regular expression | string (pattern) | `user_agent regex "^Mozilla.*"` |
+| `semver_match` | Attribute satisfies a semver constraint | string (constraint) | `app_version semver_match ">=2.0.0"` |
+
+All comparisons are **case-sensitive** by default. A condition with an **absent attribute** evaluates to false (does not match).
+
+### Rule evaluation order
+
+Rules within a flag definition are evaluated **top to bottom (first match wins)**. When a rule's conditions all match:
+
+1. The subject is checked against the rule's `rolloutPercentage` using deterministic bucketing.
+2. If the subject falls within the rollout, the rule's result (enabled + variant) is returned.
+3. If the subject falls outside the rollout, evaluation continues to the next rule.
+
+If **no rule matches**, the flag's `defaultResult` is returned.
+
+```mermaid
+flowchart TD
+    start["Evaluate flag for context"] --> r1{"Rule 1<br/>conditions match?"}
+    r1 -- yes --> b1{"Subject in<br/>rollout %?"}
+    b1 -- yes --> res1["Return Rule 1 result"]
+    b1 -- no --> r2
+    r1 -- no --> r2{"Rule 2<br/>conditions match?"}
+    r2 -- yes --> b2{"Subject in<br/>rollout %?"}
+    b2 -- yes --> res2["Return Rule 2 result"]
+    b2 -- no --> rn
+    r2 -- no --> rn["...Rule N"]
+    rn --> default["Return defaultResult"]
+```
+
+### Deterministic bucketing
+
+For **deterministic** and **persistent** semantics the engine MUST produce stable, uniformly distributed assignments:
+
+1. **Hash input**: concatenate `tenantId + ":" + flagKey + ":" + subjectId` (UTF-8, no padding).
+2. **Hash function**: **MurmurHash3** (32-bit variant) — fast and well-distributed for bucketing; not cryptographic.
+3. **Bucket**: `hash_value mod 100` → integer in range `[0, 99]`.
+4. **Match**: if `bucket < rolloutPercentage` the subject is **in** the rollout.
+
+This guarantees:
+- Same subject + same flag + same tenant → same bucket every time (deterministic).
+- Different flags produce different assignments for the same subject (flagKey is part of the hash input).
+- Uniform distribution across subjects (~1% per bucket).
+
+#### Scenario: BucketingStability
+- **GIVEN** flag `new_checkout` with `rolloutPercentage: 50` for tenant `acme`
+- **WHEN** subject `user_123` is evaluated repeatedly
+- **THEN** the bucket is always the same value
+- **AND** the result is always the same (enabled or not)
+
+#### Scenario: BucketingDistribution
+- **GIVEN** flag `feature_x` with `rolloutPercentage: 25`
+- **WHEN** 10,000 distinct subjects are evaluated
+- **THEN** approximately 25% (±3%) receive `enabled: true`
+
+#### Scenario: CrossFlagIndependence
+- **GIVEN** two flags `flag_a` and `flag_b` both at 50% rollout
+- **WHEN** the same subject is evaluated for both
+- **THEN** the bucket for `flag_a` and `flag_b` are independently computed (different hash inputs)
+- **AND** the subject MAY be in rollout for one but not the other
+
+### Random evaluation
+
+For **random** semantics, the engine generates a random number per call (not hashed from context), so the result MAY vary across requests for the same subject. The `rolloutPercentage` determines the probability of `enabled: true`.
+
 ## Evaluation lifecycle
 
 ```mermaid
