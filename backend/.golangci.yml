@@ -10,10 +10,14 @@ linters:
     - staticcheck
     - unused
     - misspell
-    - revive
   exclusions:
     paths:
       - gen
+    rules:
+      - linters: [errcheck]
+        path: _test\.go
+      - linters: [errcheck]
+        text: "Error return value of .*.Close"
 formatters:
   enable:
     - gofmt
