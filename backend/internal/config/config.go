@@ -9,6 +9,14 @@ type Config struct {
 	HTTPAddr    string
 	LogLevel    string
 	LogFormat   string
+
+	AuthEnabled    bool
+	APIKeys        string // comma-separated key:scope pairs
+	JWTIssuer      string
+	JWTAudience    string
+	JWTJWKSURL     string
+	JWTTenantClaim string
+	JWTScopeClaim  string
 }
 
 func Load() Config {
@@ -19,6 +27,14 @@ func Load() Config {
 		HTTPAddr:    envOrDefault("BACON_HTTP_ADDR", ":8080"),
 		LogLevel:    envOrDefault("BACON_LOG_LEVEL", "info"),
 		LogFormat:   envOrDefault("BACON_LOG_FORMAT", "json"),
+
+		AuthEnabled:    envOrDefault("BACON_AUTH_ENABLED", "true") == "true",
+		APIKeys:        os.Getenv("BACON_API_KEYS"),
+		JWTIssuer:      os.Getenv("BACON_JWT_ISSUER"),
+		JWTAudience:    os.Getenv("BACON_JWT_AUDIENCE"),
+		JWTJWKSURL:     os.Getenv("BACON_JWT_JWKS_URL"),
+		JWTTenantClaim: envOrDefault("BACON_JWT_TENANT_CLAIM", "tenant"),
+		JWTScopeClaim:  os.Getenv("BACON_JWT_SCOPE_CLAIM"),
 	}
 }
 
