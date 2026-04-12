@@ -66,31 +66,31 @@ type EvaluationResult struct {
 
 // Condition tests a single attribute from the evaluation context.
 type Condition struct {
-	Attribute string   `json:"attribute"`
-	Operator  Operator `json:"operator"`
-	Value     any      `json:"value"`
+	Attribute string   `json:"attribute" yaml:"attribute"`
+	Operator  Operator `json:"operator" yaml:"operator"`
+	Value     any      `json:"value" yaml:"value"`
 }
 
 // Rule is an ordered entry in a flag's rule list.
 type Rule struct {
-	Conditions        []Condition `json:"conditions"`
-	RolloutPercentage int         `json:"rolloutPercentage"`
-	Variant           string      `json:"variant"`
+	Conditions        []Condition `json:"conditions" yaml:"conditions"`
+	RolloutPercentage int         `json:"rolloutPercentage" yaml:"rolloutPercentage"`
+	Variant           string      `json:"variant" yaml:"variant"`
 }
 
 // EvalResult is the outcome embedded in a flag definition (default result).
 type EvalResult struct {
-	Enabled bool   `json:"enabled"`
-	Variant string `json:"variant"`
+	Enabled bool   `json:"enabled" yaml:"enabled"`
+	Variant string `json:"variant" yaml:"variant"`
 }
 
 // FlagDefinition is the full specification of a feature flag.
 type FlagDefinition struct {
-	Key           string        `json:"key"`
-	Type          FlagType      `json:"type"`
-	Semantics     FlagSemantics `json:"semantics"`
-	Enabled       bool          `json:"enabled"`
-	Description   string        `json:"description"`
-	Rules         []Rule        `json:"rules"`
-	DefaultResult EvalResult    `json:"defaultResult"`
+	Key           string        `json:"key" yaml:"key"`
+	Type          FlagType      `json:"type" yaml:"type"`
+	Semantics     FlagSemantics `json:"semantics" yaml:"semantics"`
+	Enabled       bool          `json:"enabled" yaml:"enabled"`
+	Description   string        `json:"description" yaml:"description"`
+	Rules         []Rule        `json:"rules" yaml:"rules"`
+	DefaultResult EvalResult    `json:"defaultResult" yaml:"defaultResult"`
 }

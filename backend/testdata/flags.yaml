@@ -1,0 +1,84 @@
+tenants:
+  acme:
+    flags:
+      - key: dark_mode
+        type: boolean
+        semantics: deterministic
+        enabled: true
+        description: "Enable dark mode for premium users"
+        rules:
+          - conditions:
+              - attribute: attributes.plan
+                operator: equals
+                value: "premium"
+            rolloutPercentage: 100
+            variant: ""
+        defaultResult:
+          enabled: false
+          variant: ""
+
+      - key: new_checkout
+        type: boolean
+        semantics: random
+        enabled: true
+        description: "New checkout flow A/B test"
+        rules:
+          - conditions:
+              - attribute: attributes.country
+                operator: in
+                value: ["US", "CA", "GB"]
+            rolloutPercentage: 50
+            variant: ""
+        defaultResult:
+          enabled: false
+          variant: ""
+
+      - key: landing_page
+        type: variant
+        semantics: deterministic
+        enabled: true
+        description: "Landing page experiment"
+        rules:
+          - conditions:
+              - attribute: attributes.device
+                operator: equals
+                value: "mobile"
+            rolloutPercentage: 100
+            variant: "mobile_v2"
+          - conditions:
+              - attribute: attributes.device
+                operator: equals
+                value: "desktop"
+            rolloutPercentage: 100
+            variant: "desktop_v2"
+        defaultResult:
+          enabled: true
+          variant: "control"
+
+  globex:
+    flags:
+      - key: beta_api
+        type: boolean
+        semantics: persistent
+        enabled: true
+        description: "Beta API access — requires persistence backend"
+        rules:
+          - conditions:
+              - attribute: attributes.role
+                operator: equals
+                value: "beta_tester"
+            rolloutPercentage: 100
+            variant: ""
+        defaultResult:
+          enabled: false
+          variant: ""
+
+      - key: maintenance_banner
+        type: boolean
+        semantics: deterministic
+        enabled: false
+        description: "Show maintenance banner to all users"
+        rules: []
+        defaultResult:
+          enabled: false
+          variant: ""
