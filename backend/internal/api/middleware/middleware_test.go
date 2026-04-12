@@ -7,6 +7,10 @@ import (
 	"testing"
 )
 
+const (
+	headerRequestID = "X-Request-Id"
+)
+
 func TestCorrelation_GeneratesID(t *testing.T) {
 	handler := Correlation(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id, ok := r.Context().Value(RequestIDKey).(string)
@@ -20,9 +24,9 @@ func TestCorrelation_GeneratesID(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	got := w.Header().Get("X-Request-Id")
+	got := w.Header().Get(headerRequestID)
 	if got == "" {
-		t.Fatal("expected X-Request-Id header to be set")
+		t.Fatal("expected " + headerRequestID + " header to be set")
 	}
 	if len(strings.Split(got, "-")) != 5 {
 		t.Errorf("expected UUID format, got %q", got)
@@ -40,12 +44,12 @@ func TestCorrelation_EchoesExisting(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-Request-Id", existing)
+	req.Header.Set(headerRequestID, existing)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	if w.Header().Get("X-Request-Id") != existing {
-		t.Errorf("response header = %q, want %q", w.Header().Get("X-Request-Id"), existing)
+	if w.Header().Get(headerRequestID) != existing {
+		t.Errorf("response header = %q, want %q", w.Header().Get(headerRequestID), existing)
 	}
 }
 
@@ -59,7 +63,7 @@ func TestCorrelation_UniqueIDs(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
-		id := w.Header().Get("X-Request-Id")
+		id := w.Header().Get(headerRequestID)
 		if _, dup := ids[id]; dup {
 			t.Fatalf("duplicate ID generated: %s", id)
 		}

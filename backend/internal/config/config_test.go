@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const modeMultiTenant = "multi-tenant"
+
 func TestLoadDefaults(t *testing.T) {
 	for _, key := range []string{
 		"BACON_MODE", "BACON_PERSISTENCE", "BACON_CONFIG_FILE",
@@ -37,7 +39,7 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadFromEnv(t *testing.T) {
 	envs := map[string]string{
-		"BACON_MODE":        "multi-tenant",
+		"BACON_MODE":        modeMultiTenant,
 		"BACON_PERSISTENCE": "grpc",
 		"BACON_CONFIG_FILE": "/tmp/flags.yaml",
 		"BACON_HTTP_ADDR":   ":9090",
@@ -56,7 +58,7 @@ func TestLoadFromEnv(t *testing.T) {
 		got   string
 		want  string
 	}{
-		{"Mode", cfg.Mode, "multi-tenant"},
+		{"Mode", cfg.Mode, modeMultiTenant},
 		{"Persistence", cfg.Persistence, "grpc"},
 		{"ConfigFile", cfg.ConfigFile, "/tmp/flags.yaml"},
 		{"HTTPAddr", cfg.HTTPAddr, ":9090"},
@@ -79,13 +81,13 @@ func TestLoadPartialOverride(t *testing.T) {
 		os.Unsetenv(key)
 	}
 
-	t.Setenv("BACON_MODE", "multi-tenant")
+	t.Setenv("BACON_MODE", modeMultiTenant)
 	t.Setenv("BACON_LOG_LEVEL", "warn")
 
 	cfg := Load()
 
-	if cfg.Mode != "multi-tenant" {
-		t.Errorf("Mode = %q, want %q", cfg.Mode, "multi-tenant")
+	if cfg.Mode != modeMultiTenant {
+		t.Errorf("Mode = %q, want %q", cfg.Mode, modeMultiTenant)
 	}
 	if cfg.LogLevel != "warn" {
 		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "warn")

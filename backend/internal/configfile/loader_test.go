@@ -13,6 +13,11 @@ import (
 	"github.com/orlandoburli/feature-bacon/internal/engine"
 )
 
+const (
+	flagsFileName = "flags.yaml"
+	fmtNewError   = "New() error: %v"
+)
+
 func writeFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
@@ -62,11 +67,11 @@ tenants:
 
 func TestMultiTenantFile(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
-		t.Fatalf("New() error: %v", err)
+		t.Fatalf(fmtNewError, err)
 	}
 
 	flag, err := s.GetFlag("acme", "dark_mode")
@@ -136,7 +141,7 @@ flags:
 
 	s, err := New(dir)
 	if err != nil {
-		t.Fatalf("New() error: %v", err)
+		t.Fatalf(fmtNewError, err)
 	}
 
 	flag, err := s.GetFlag("acme", "feature_x")
@@ -161,7 +166,7 @@ flags:
 
 func TestSidecarSingleTenant(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 flags:
   - key: my_flag
     type: boolean
@@ -175,7 +180,7 @@ flags:
 
 	s, err := New(path)
 	if err != nil {
-		t.Fatalf("New() error: %v", err)
+		t.Fatalf(fmtNewError, err)
 	}
 
 	flag, err := s.GetFlag(DefaultTenant, "my_flag")
@@ -192,7 +197,7 @@ flags:
 
 func TestValidationMissingKey(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -212,7 +217,7 @@ tenants:
 }
 
 func TestMissingFile(t *testing.T) {
-	_, err := New("/nonexistent/path/flags.yaml")
+	_, err := New(filepath.Join("/nonexistent/path", flagsFileName))
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}
@@ -227,7 +232,7 @@ func TestMissingDirectory(t *testing.T) {
 
 func TestReload(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -251,7 +256,7 @@ tenants:
 		t.Fatalf("before reload: keys = %v", keys)
 	}
 
-	writeFile(t, dir, "flags.yaml", `
+	writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -286,7 +291,7 @@ tenants:
 
 func TestGetFlagNonExistentTenant(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
@@ -304,7 +309,7 @@ func TestGetFlagNonExistentTenant(t *testing.T) {
 
 func TestGetFlagNonExistentKey(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
@@ -322,7 +327,7 @@ func TestGetFlagNonExistentKey(t *testing.T) {
 
 func TestListFlagKeysNonExistentTenant(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
@@ -340,7 +345,7 @@ func TestListFlagKeysNonExistentTenant(t *testing.T) {
 
 func TestConcurrentReads(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
@@ -364,7 +369,7 @@ func TestConcurrentReads(t *testing.T) {
 
 func TestConcurrentReadsDuringReload(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", multiTenantYAML)
+	path := writeFile(t, dir, flagsFileName, multiTenantYAML)
 
 	s, err := New(path)
 	if err != nil {
@@ -420,7 +425,7 @@ flags:
 
 func TestPersistentSemanticsWarning(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -452,9 +457,9 @@ tenants:
 }
 
 func TestSampleFlagsFile(t *testing.T) {
-	s, err := New("../../testdata/flags.yaml")
+	s, err := New(filepath.Join("..", "..", "testdata", flagsFileName))
 	if err != nil {
-		t.Fatalf("failed to load testdata/flags.yaml: %v", err)
+		t.Fatalf("failed to load testdata/%s: %v", flagsFileName, err)
 	}
 
 	acmeKeys, _ := s.ListFlagKeys("acme")
@@ -487,7 +492,7 @@ func TestEmptyDirectoryLoads(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `{{{invalid yaml`)
+	path := writeFile(t, dir, flagsFileName, `{{{invalid yaml`)
 
 	_, err := New(path)
 	if err == nil {
@@ -535,7 +540,7 @@ func TestDirectoryWithInvalidYAMLFile(t *testing.T) {
 
 func TestWatchSignalReloads(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -563,7 +568,7 @@ tenants:
 		close(done)
 	}()
 
-	writeFile(t, dir, "flags.yaml", `
+	writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -614,7 +619,7 @@ tenants:
 
 func TestReloadWithInvalidFileKeepsOldData(t *testing.T) {
 	dir := t.TempDir()
-	path := writeFile(t, dir, "flags.yaml", `
+	path := writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
@@ -638,7 +643,7 @@ tenants:
 		t.Fatal("expected feat_a before bad reload")
 	}
 
-	writeFile(t, dir, "flags.yaml", `
+	writeFile(t, dir, flagsFileName, `
 tenants:
   acme:
     flags:
