@@ -120,7 +120,7 @@ jobs:
         if: env.HAS_SONAR_TOKEN == 'true'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: orlandoburli_feature-bacon
+          SONAR_PROJECT_KEY: orlandoburli_feature-bacon-backend
           SONAR_ORG: orlandoburli
           SONAR_PROJECT_NAME: Feature Bacon - Backend
         run: |
