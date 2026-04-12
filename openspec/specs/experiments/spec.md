@@ -49,18 +49,25 @@ The system SHALL allow defining experiments with two or more variants and a traf
 
 ### Requirement: StableAssignment
 
-The system SHALL assign a stable variant per subject for the lifetime of a running experiment when `stickyAssignment` is enabled.
+The system SHALL assign a stable variant per subject for the lifetime of a running experiment when `stickyAssignment` is enabled. **This requires a writable persistence module.**
 
 #### Scenario: ConsistentVariant
-- **GIVEN** a running experiment `checkout_redesign` with sticky assignment enabled
+- **GIVEN** a running experiment `checkout_redesign` with sticky assignment enabled and a **writable** persistence module
 - **WHEN** subject `user_100` is evaluated multiple times
 - **THEN** the same variant is returned every time
 
 #### Scenario: NewSubjectAssignment
-- **GIVEN** a running experiment with 50/50 allocation
+- **GIVEN** a running experiment with 50/50 allocation and a **writable** persistence module
 - **WHEN** a previously unseen subject is evaluated
 - **THEN** the subject is assigned to a variant based on the allocation percentages
 - **AND** the assignment is persisted
+
+#### Scenario: StickyAssignmentWithReadOnlyPersistence
+- **GIVEN** an experiment with `stickyAssignment: true` but the system is running with **config file (read-only) persistence**
+- **WHEN** a subject is evaluated
+- **THEN** a variant is assigned based on allocation percentages but **not persisted**
+- **AND** subsequent evaluations for the same subject MAY return a different variant
+- **AND** the result includes a reason indicating degraded behavior (e.g. `no_persistence`)
 
 ### Requirement: ExperimentLifecycle
 
@@ -132,7 +139,22 @@ sequenceDiagram
     end
 ```
 
+### Requirement: ReadOnlyPersistenceAwareness
+
+When running with config file persistence, experiments with `stickyAssignment: true` SHALL operate in **degraded mode**. The system MUST make this limitation visible to operators.
+
+#### Scenario: StartupWarning
+- **GIVEN** config file persistence and experiments with `stickyAssignment: true` defined in the file
+- **WHEN** the core starts
+- **THEN** a warning is logged listing the experiments that will not have stable assignments
+
+#### Scenario: DeterministicExperimentUnaffected
+- **GIVEN** config file persistence and an experiment with `stickyAssignment: false`
+- **WHEN** subjects are evaluated
+- **THEN** behavior is identical to writable persistence — variants are assigned per allocation on every request
+
 ## Technical Notes
 
 - **Implementation**: Extends the evaluation engine; experiment definitions stored alongside flags
 - **Dependencies**: evaluation (variant resolution), persistence module (sticky assignments via gRPC), integrations modules (exposure/conversion events via gRPC)
+- **Config file mode**: Experiment definitions are loaded from the file; sticky assignment is unavailable — see persistence spec feature availability matrix

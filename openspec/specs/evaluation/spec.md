@@ -41,10 +41,17 @@ The system SHALL evaluate a single flag given a flag key and an evaluation conte
 - **AND** the result MAY differ on subsequent calls for the same context
 
 #### Scenario: PersistentEvaluation
-- **GIVEN** a flag `onboarding_flow` configured as persistent with TTL of 7 days
+- **GIVEN** a flag `onboarding_flow` configured as persistent with TTL of 7 days and a **writable** persistence module is active
 - **WHEN** evaluation is requested for subjectId `user_456` for the first time
 - **THEN** the engine computes and stores the assignment
 - **AND** subsequent evaluations for the same subject return the same result until TTL expires
+
+#### Scenario: PersistentFlagWithReadOnlyPersistence
+- **GIVEN** a flag `onboarding_flow` configured as persistent but the system is running with **config file (read-only) persistence**
+- **WHEN** evaluation is requested for subjectId `user_456`
+- **THEN** the engine evaluates using the underlying logic (deterministic or random) **without** storing the assignment
+- **AND** the result includes `reason: no_persistence`
+- **AND** subsequent evaluations for the same subject MAY return a different result
 
 ### Requirement: BatchEvaluation
 
@@ -94,10 +101,25 @@ The system SHALL return a safe default when a flag is unknown, disabled, or when
 - **THEN** the result is `enabled: false` with reason `disabled`
 
 #### Scenario: EvaluationError
-- **GIVEN** the persistence layer is unreachable during evaluation of a persistent flag
+- **GIVEN** the persistence module is unreachable during evaluation of a persistent flag
 - **WHEN** evaluation is requested
 - **THEN** the result is `enabled: false` with reason `error`
 - **AND** the error is logged with correlation context
+
+### Requirement: ReadOnlyPersistenceAwareness
+
+The evaluation engine SHALL detect whether the active persistence is read-only (config file mode) and adjust behavior for persistent and random flags accordingly, without failing.
+
+#### Scenario: DeterministicUnaffected
+- **GIVEN** config file persistence and a flag with `semantics: deterministic`
+- **WHEN** evaluation is requested
+- **THEN** behavior is identical to writable persistence — same context always yields the same result
+
+#### Scenario: PersistentDegradesToUnderlying
+- **GIVEN** config file persistence and a flag with `semantics: persistent`
+- **WHEN** evaluation is requested
+- **THEN** the flag is evaluated as if `semantics` were its underlying type (deterministic or random)
+- **AND** a warning-level log entry is emitted on first occurrence per flag key
 
 ## Evaluation lifecycle
 
