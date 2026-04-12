@@ -138,12 +138,16 @@ jobs:
               -d "organization=$SONAR_ORG" \
               -d "visibility=public"
 
-            curl -sf -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
+            if curl -s -o /dev/null -w "%{http_code}" -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
               -d "key=sonar.autoscan.enabled" \
               -d "value=false" \
-              -d "component=$SONAR_PROJECT_KEY"
+              -d "component=$SONAR_PROJECT_KEY" | grep -q "^2"; then
+              echo "::notice::Automatic analysis disabled via API"
+            else
+              echo "::warning::Could not disable automatic analysis via API — disable it manually in SonarCloud project settings"
+            fi
 
-            echo "::notice::SonarCloud project created with automatic analysis disabled"
+            echo "::notice::SonarCloud project created"
           else
             echo "SonarCloud project already exists, skipping creation."
           fi
