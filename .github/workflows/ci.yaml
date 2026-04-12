@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 env:
   COVERAGE_FAIL_THRESHOLD: 80
   COVERAGE_WARN_THRESHOLD: 90
@@ -43,6 +39,9 @@ jobs:
   test:
     name: Test Go
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
     steps:
