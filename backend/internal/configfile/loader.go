@@ -22,21 +22,31 @@ type multiTenantFile struct {
 	Tenants map[string]tenantBlock `yaml:"tenants"`
 }
 
+// APIKeyEntry represents an API key defined in the config file.
+type APIKeyEntry struct {
+	Key   string `yaml:"key"`
+	Scope string `yaml:"scope"`
+	Name  string `yaml:"name"`
+}
+
 type tenantBlock struct {
-	Flags []engine.FlagDefinition `yaml:"flags"`
+	Flags   []engine.FlagDefinition `yaml:"flags"`
+	APIKeys []APIKeyEntry           `yaml:"api_keys"`
 }
 
 // singleTenantFile is the top-level YAML structure for sidecar / single-tenant files.
 type singleTenantFile struct {
-	Flags []engine.FlagDefinition `yaml:"flags"`
+	Flags   []engine.FlagDefinition `yaml:"flags"`
+	APIKeys []APIKeyEntry           `yaml:"api_keys"`
 }
 
 // Store is a file-backed FlagStore that supports single-file, directory,
 // and sidecar modes. It is safe for concurrent reads and supports hot reload.
 type Store struct {
-	path string
-	mu   sync.RWMutex
-	data map[string]map[string]*engine.FlagDefinition // tenant -> flagKey -> definition
+	path    string
+	mu      sync.RWMutex
+	data    map[string]map[string]*engine.FlagDefinition // tenant -> flagKey -> definition
+	apiKeys map[string][]APIKeyEntry                     // tenant -> keys
 }
 
 // New creates a Store and performs the initial load from the given path.
@@ -78,6 +88,25 @@ func (s *Store) ListFlagKeys(tenantID string) ([]string, error) {
 	return keys, nil
 }
 
+// APIKeys returns the API keys defined for each tenant in the config file.
+func (s *Store) APIKeys() map[string][]APIKeyEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make(map[string][]APIKeyEntry, len(s.apiKeys))
+	for tid, keys := range s.apiKeys {
+		copied := make([]APIKeyEntry, len(keys))
+		copy(copied, keys)
+		result[tid] = copied
+	}
+	return result
+}
+
+type loadResult struct {
+	flags   map[string]map[string]*engine.FlagDefinition
+	apiKeys map[string][]APIKeyEntry
+}
+
 // Reload re-reads the config from disk and atomically swaps the in-memory data.
 func (s *Store) Reload() error {
 	info, err := os.Stat(s.path)
@@ -85,18 +114,19 @@ func (s *Store) Reload() error {
 		return fmt.Errorf("configfile: stat %s: %w", s.path, err)
 	}
 
-	var data map[string]map[string]*engine.FlagDefinition
+	var result *loadResult
 	if info.IsDir() {
-		data, err = loadDirectory(s.path)
+		result, err = loadDirectory(s.path)
 	} else {
-		data, err = loadFile(s.path)
+		result, err = loadFile(s.path)
 	}
 	if err != nil {
 		return err
 	}
 
 	s.mu.Lock()
-	s.data = data
+	s.data = result.flags
+	s.apiKeys = result.apiKeys
 	s.mu.Unlock()
 	return nil
 }
@@ -122,7 +152,7 @@ func (s *Store) WatchSignal(ctx context.Context) {
 	}
 }
 
-func loadFile(path string) (map[string]map[string]*engine.FlagDefinition, error) {
+func loadFile(path string) (*loadResult, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("configfile: read %s: %w", path, err)
@@ -143,11 +173,11 @@ func loadFile(path string) (map[string]map[string]*engine.FlagDefinition, error)
 	}
 
 	return buildIndex(map[string]tenantBlock{
-		DefaultTenant: {Flags: st.Flags},
+		DefaultTenant: {Flags: st.Flags, APIKeys: st.APIKeys},
 	})
 }
 
-func loadDirectory(dir string) (map[string]map[string]*engine.FlagDefinition, error) {
+func loadDirectory(dir string) (*loadResult, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("configfile: read dir %s: %w", dir, err)
@@ -180,8 +210,10 @@ func loadDirectory(dir string) (map[string]map[string]*engine.FlagDefinition, er
 	return buildIndex(tenants)
 }
 
-func buildIndex(tenants map[string]tenantBlock) (map[string]map[string]*engine.FlagDefinition, error) {
+func buildIndex(tenants map[string]tenantBlock) (*loadResult, error) {
 	data := make(map[string]map[string]*engine.FlagDefinition, len(tenants))
+	keys := make(map[string][]APIKeyEntry, len(tenants))
+
 	for tid, tb := range tenants {
 		m := make(map[string]*engine.FlagDefinition, len(tb.Flags))
 		for i := range tb.Flags {
@@ -195,8 +227,12 @@ func buildIndex(tenants map[string]tenantBlock) (map[string]map[string]*engine.F
 			m[f.Key] = f
 		}
 		data[tid] = m
+
+		if len(tb.APIKeys) > 0 {
+			keys[tid] = tb.APIKeys
+		}
 	}
-	return data, nil
+	return &loadResult{flags: data, apiKeys: keys}, nil
 }
 
 // compile-time interface check
