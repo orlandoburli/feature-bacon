@@ -43,6 +43,8 @@ jobs:
   test:
     name: Test Go
     runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,10 +89,10 @@ jobs:
           message: |
             ## ${{ steps.coverage.outputs.emoji }} Backend Coverage: ${{ steps.coverage.outputs.total }}%
 
-            | Threshold | Value | Status |
-            |-----------|-------|--------|
-            | Fail | < ${{ env.COVERAGE_FAIL_THRESHOLD }}% | ${{ steps.coverage.outputs.total >= env.COVERAGE_FAIL_THRESHOLD && '✅' || '❌' }} |
-            | Warn | < ${{ env.COVERAGE_WARN_THRESHOLD }}% | ${{ steps.coverage.outputs.total >= env.COVERAGE_WARN_THRESHOLD && '✅' || '⚠️' }} |
+            | Threshold | Required | Result |
+            |-----------|----------|--------|
+            | Minimum (fail) | ≥ ${{ env.COVERAGE_FAIL_THRESHOLD }}% | ${{ steps.coverage.outputs.status != 'fail' && '✅ Pass' || '❌ Fail' }} |
+            | Recommended (warn) | ≥ ${{ env.COVERAGE_WARN_THRESHOLD }}% | ${{ steps.coverage.outputs.status == 'pass' && '✅ Pass' || '⚠️ Below target' }} |
 
             <details>
             <summary>Coverage by function</summary>
@@ -113,14 +115,14 @@ jobs:
           echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
 
       - name: SonarQube Scan
-        if: env.SONAR_TOKEN != ''
+        if: env.HAS_SONAR_TOKEN == 'true'
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
 
       - name: SonarQube Quality Gate
-        if: env.SONAR_TOKEN != ''
+        if: env.HAS_SONAR_TOKEN == 'true'
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
