@@ -174,7 +174,7 @@ func loadDirectory(dir string) (map[string]map[string]*engine.FlagDefinition, er
 			return nil, fmt.Errorf("configfile: parse %s: %w", name, err)
 		}
 
-		tenants[tenantID] = tenantBlock{Flags: st.Flags}
+		tenants[tenantID] = tenantBlock(st)
 	}
 
 	return buildIndex(tenants)
