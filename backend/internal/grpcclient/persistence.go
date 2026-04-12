@@ -66,8 +66,8 @@ func (c *PersistenceClient) ListFlagKeys(tenantID string) ([]string, error) {
 	return keys, nil
 }
 
-// GetAssignment retrieves a persisted assignment for the given subject and flag.
-func (c *PersistenceClient) GetAssignment(tenantID, subjectID, flagKey string) (*pb.Assignment, bool, error) {
+// getAssignmentProto retrieves a persisted assignment as a proto message.
+func (c *PersistenceClient) getAssignmentProto(tenantID, subjectID, flagKey string) (*pb.Assignment, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -82,8 +82,8 @@ func (c *PersistenceClient) GetAssignment(tenantID, subjectID, flagKey string) (
 	return resp.Assignment, resp.Found, nil
 }
 
-// SaveAssignment persists an assignment.
-func (c *PersistenceClient) SaveAssignment(tenantID string, assignment *pb.Assignment) error {
+// saveAssignmentProto persists an assignment given as a proto message.
+func (c *PersistenceClient) saveAssignmentProto(tenantID string, assignment *pb.Assignment) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

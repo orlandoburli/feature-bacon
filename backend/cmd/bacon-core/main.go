@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	crypto_tls "crypto/tls"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,8 @@ import (
 	"github.com/orlandoburli/feature-bacon/internal/config"
 	"github.com/orlandoburli/feature-bacon/internal/configfile"
 	"github.com/orlandoburli/feature-bacon/internal/engine"
+	"github.com/orlandoburli/feature-bacon/internal/grpcclient"
+	"github.com/orlandoburli/feature-bacon/internal/tlsutil"
 )
 
 func main() {
@@ -23,8 +26,10 @@ func main() {
 	cfg := config.Load()
 
 	var (
-		store     engine.FlagStore
-		fileStore *configfile.Store
+		store       engine.FlagStore
+		assignments engine.AssignmentStore
+		fileStore   *configfile.Store
+		grpcPersist *grpcclient.PersistenceClient
 	)
 
 	switch cfg.Persistence {
@@ -36,6 +41,31 @@ func main() {
 		}
 		store = s
 		fileStore = s
+	case "grpc":
+		tlsCfg := tlsutil.Config{
+			CAFile:   cfg.TLSCA,
+			CertFile: cfg.TLSCert,
+			KeyFile:  cfg.TLSKey,
+		}
+		var tc *crypto_tls.Config
+		if tlsCfg.Enabled() {
+			var err error
+			tc, err = tlsutil.ClientTLSConfig(tlsCfg)
+			if err != nil {
+				slog.Error("failed to load TLS config", "error", err)
+				os.Exit(1)
+			}
+			slog.Info("mTLS enabled for persistence module")
+		}
+		conn, err := grpcclient.Dial(cfg.PersistenceAddr, tc)
+		if err != nil {
+			slog.Error("failed to connect to persistence module", "addr", cfg.PersistenceAddr, "error", err)
+			os.Exit(1)
+		}
+		grpcPersist = grpcclient.NewPersistenceClient(conn)
+		store = grpcPersist
+		assignments = grpcPersist
+		slog.Info("connected to persistence module", "addr", cfg.PersistenceAddr)
 	default:
 		slog.Error("unsupported persistence type", "persistence", cfg.Persistence)
 		os.Exit(1)
@@ -60,7 +90,11 @@ func main() {
 		slog.Info("JWT authentication enabled", "issuer", cfg.JWTIssuer)
 	}
 
-	eng := engine.New(store)
+	if grpcPersist != nil {
+		defer func() { _ = grpcPersist.Close() }()
+	}
+
+	eng := engine.New(store, assignments)
 	router := baconapi.NewRouter(baconapi.RouterConfig{
 		Engine:       eng,
 		AuthDisabled: !cfg.AuthEnabled,

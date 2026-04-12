@@ -2,6 +2,7 @@ package engine
 
 import (
 	"math/rand/v2"
+	"time"
 )
 
 // FlagStore abstracts retrieval of flag definitions.
@@ -11,14 +12,32 @@ type FlagStore interface {
 	ListFlagKeys(tenantID string) ([]string, error)
 }
 
-// Engine evaluates feature flags against an evaluation context.
-type Engine struct {
-	store FlagStore
+// Assignment represents a persisted flag assignment for a subject.
+type Assignment struct {
+	SubjectID  string
+	FlagKey    string
+	Enabled    bool
+	Variant    string
+	AssignedAt time.Time
+	ExpiresAt  time.Time // zero value means no expiry
 }
 
-// New creates an Engine backed by the given FlagStore.
-func New(store FlagStore) *Engine {
-	return &Engine{store: store}
+// AssignmentStore abstracts persistent assignment read/write operations.
+// Nil when running in config-file-only mode.
+type AssignmentStore interface {
+	GetAssignment(tenantID, subjectID, flagKey string) (*Assignment, bool, error)
+	SaveAssignment(tenantID string, a *Assignment) error
+}
+
+// Engine evaluates feature flags against an evaluation context.
+type Engine struct {
+	store       FlagStore
+	assignments AssignmentStore
+}
+
+// New creates an Engine backed by the given FlagStore and optional AssignmentStore.
+func New(store FlagStore, assignments AssignmentStore) *Engine {
+	return &Engine{store: store, assignments: assignments}
 }
 
 // Store returns the underlying FlagStore.
@@ -55,6 +74,10 @@ func (e *Engine) Evaluate(flagKey string, ctx EvaluationContext) EvaluationResul
 		}
 	}
 
+	if flag.Semantics == SemanticsPersistent {
+		return e.evaluatePersistent(flag, ctx)
+	}
+
 	return e.evaluateRules(flag, ctx)
 }
 
@@ -66,6 +89,40 @@ func (e *Engine) EvaluateBatch(flagKeys []string, ctx EvaluationContext) []Evalu
 		results[i] = e.Evaluate(key, ctx)
 	}
 	return results
+}
+
+// evaluatePersistent checks for a saved assignment first. If none exists or it
+// has expired, evaluates rules normally and persists the result. If no
+// AssignmentStore is configured, falls back to deterministic evaluation.
+func (e *Engine) evaluatePersistent(flag *FlagDefinition, ctx EvaluationContext) EvaluationResult {
+	if e.assignments == nil {
+		result := e.evaluateRules(flag, ctx)
+		result.Reason = ReasonNoPersistence
+		return result
+	}
+
+	existing, found, err := e.assignments.GetAssignment(ctx.TenantID, ctx.SubjectID, flag.Key)
+	if err == nil && found {
+		return EvaluationResult{
+			TenantID: ctx.TenantID,
+			FlagKey:  flag.Key,
+			Enabled:  existing.Enabled,
+			Variant:  existing.Variant,
+			Reason:   ReasonPersisted,
+		}
+	}
+
+	result := e.evaluateRules(flag, ctx)
+
+	_ = e.assignments.SaveAssignment(ctx.TenantID, &Assignment{
+		SubjectID:  ctx.SubjectID,
+		FlagKey:    flag.Key,
+		Enabled:    result.Enabled,
+		Variant:    result.Variant,
+		AssignedAt: time.Now(),
+	})
+
+	return result
 }
 
 // evaluateRules walks rules top-to-bottom (first match wins).
