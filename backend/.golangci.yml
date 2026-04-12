@@ -1,0 +1,17 @@
+version: "2"
+run:
+  go: "1.23"
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+issues:
+  exclude-dirs:
+    - gen

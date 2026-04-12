@@ -1,0 +1,13 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/orlandoburli/feature-bacon/gen/proto
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: backend/gen/proto
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: backend/gen/proto
+    opt: paths=source_relative

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package bacon.v1;
+
+option go_package = "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1;baconv1";
+
+message Event {
+  string event_id = 1;
+  string event_type = 2;
+  string tenant_id = 3;
+  int64 timestamp = 4;
+  string payload_json = 5;
+}
+
+service PublisherService {
+  rpc Publish(PublishRequest) returns (PublishResponse);
+  rpc PublishBatch(PublishBatchRequest) returns (PublishBatchResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message PublishRequest {
+  Event event = 1;
+}
+message PublishResponse {
+  bool accepted = 1;
+}
+
+message PublishBatchRequest {
+  repeated Event events = 1;
+}
+message PublishBatchResponse {
+  int32 accepted = 1;
+  int32 failed = 2;
+}
+
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  bool healthy = 1;
+  string message = 2;
+}

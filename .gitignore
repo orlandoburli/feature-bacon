@@ -1,5 +1,21 @@
+# IDE
 .idea/
-.DS_Store
+.vscode/
 *.swp
 *.swo
-*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certificates (except README)
+certs/*
+!certs/README.md
+
+# Node
+node_modules/
+.next/
+
+# Go
+backend/bin/
+backend/coverage.out
