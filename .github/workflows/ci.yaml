@@ -57,10 +57,6 @@ jobs:
         working-directory: backend
         run: go test -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/... ./...
 
-      - name: Rewrite coverage paths for SonarQube
-        working-directory: backend
-        run: sed -i 's|github.com/orlandoburli/feature-bacon/|backend/|g' coverage.out
-
       - name: Parse coverage
         id: coverage
         working-directory: backend
@@ -117,6 +113,10 @@ jobs:
         if: steps.coverage.outputs.status == 'warn'
         run: |
           echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
+
+      - name: Rewrite coverage paths for SonarQube
+        working-directory: backend
+        run: sed -i 's|github.com/orlandoburli/feature-bacon/|backend/|g' coverage.out
 
       - name: SonarQube Scan
         if: env.HAS_SONAR_TOKEN == 'true'
