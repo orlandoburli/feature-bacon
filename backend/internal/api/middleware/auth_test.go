@@ -13,6 +13,7 @@ const (
 	authHeader   = "Authorization"
 	contentJSON  = "application/problem+json"
 	pathEvaluate = "/api/v1/evaluate"
+	fmtExpect401 = "expected 401, got %d"
 )
 
 func newKeyStore() *auth.MemKeyStore {
@@ -54,7 +55,7 @@ func TestAuth_MissingHeader(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
+		t.Errorf(fmtExpect401, w.Code)
 	}
 }
 
@@ -68,7 +69,7 @@ func TestAuth_MalformedHeader(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
+		t.Errorf(fmtExpect401, w.Code)
 	}
 }
 
@@ -82,7 +83,7 @@ func TestAuth_UnsupportedScheme(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
+		t.Errorf(fmtExpect401, w.Code)
 	}
 }
 
@@ -120,7 +121,7 @@ func TestAuth_InvalidAPIKey(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
+		t.Errorf(fmtExpect401, w.Code)
 	}
 }
 
@@ -134,7 +135,7 @@ func TestAuth_BearerWithoutJWTConfig(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", w.Code)
+		t.Errorf(fmtExpect401, w.Code)
 	}
 }
 
