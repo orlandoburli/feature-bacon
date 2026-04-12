@@ -48,9 +48,35 @@ The system SHALL support execution as a **standalone multi-tenant application** 
 - **THEN** a default implicit tenant is used
 - **AND** tenant routing overhead is eliminated
 
+## Domain map
+
+```mermaid
+graph TB
+    subgraph core["bacon-core"]
+        evaluation["Evaluation"]
+        management["Management"]
+        experiments["Experiments"]
+        observability["Observability"]
+        evaluation --- experiments
+        management --> evaluation
+    end
+
+    subgraph modules["Out-of-process modules (gRPC + mTLS)"]
+        persistence["Persistence<br/>(Postgres / Redis / Mongo)"]
+        integrations["Integrations<br/>(Kafka / SQS / PubSub / gRPC)"]
+    end
+
+    evaluation -- "read definitions<br/>read/write assignments" --> persistence
+    management -- "write definitions" --> persistence
+    management -- "change events" --> integrations
+    experiments -- "exposure/conversion events" --> integrations
+    observability -. "health checks" .-> persistence
+    observability -. "health checks" .-> integrations
+```
+
 ## Technical Notes
 
 - **Backend**: Go — API, evaluation engine, admin operations, metrics
 - **Frontend**: React with Next.js — management console and dashboards
-- **Persistence**: MongoDB, Redis, or PostgreSQL as pluggable modules
-- **Integrations**: Kafka, SQS, GCP Pub/Sub, generic gRPC as pluggable modules
+- **Persistence**: MongoDB, Redis, or PostgreSQL as out-of-process gRPC modules
+- **Integrations**: Kafka, SQS, GCP Pub/Sub, generic gRPC as out-of-process gRPC modules

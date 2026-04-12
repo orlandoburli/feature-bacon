@@ -99,8 +99,39 @@ The system SHALL return a safe default when a flag is unknown, disabled, or when
 - **THEN** the result is `enabled: false` with reason `error`
 - **AND** the error is logged with correlation context
 
+## Evaluation lifecycle
+
+```mermaid
+sequenceDiagram
+    participant client as Client app
+    participant api as bacon-core API
+    participant engine as Engine
+    participant persist as Persistence module<br/>(gRPC)
+
+    client->>api: POST /evaluate {flagKey, context}
+    api->>engine: Evaluate(flagKey, context)
+
+    alt persistent flag
+        engine->>persist: GetAssignment(subject, flagKey)
+        persist-->>engine: Assignment or not found
+
+        alt assignment found and not expired
+            engine-->>api: Cached result
+        else not found or expired
+            engine->>engine: Compute result (deterministic / random)
+            engine->>persist: SaveAssignment(subject, flagKey, result, TTL)
+            engine-->>api: Computed result
+        end
+    else deterministic or random flag
+        engine->>engine: Compute result from rules + context
+        engine-->>api: Computed result
+    end
+
+    api-->>client: EvaluationResult {enabled, variant, reason}
+```
+
 ## Technical Notes
 
-- **Implementation**: Evaluation engine in Go; exposed via HTTP API
-- **Dependencies**: persistence (for persisted flags), management (for flag definitions)
+- **Implementation**: Evaluation engine in Go; exposed via HTTP API; calls persistence module over gRPC + mTLS
+- **Dependencies**: persistence module (for persisted flags and flag definitions)
 - **Performance**: This is the hot path — latency budget is tight; concrete SLO TBD

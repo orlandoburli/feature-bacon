@@ -96,7 +96,43 @@ The system MAY support recording conversion events tied to an experiment for out
 - **WHEN** the application reports a conversion event (e.g. `purchase_completed`)
 - **THEN** the event is recorded with experiment key, variant key, subject id, event name, and timestamp
 
+## Experiment lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> draft : Create experiment
+    draft --> running : Start
+    running --> paused : Pause
+    paused --> running : Resume
+    running --> completed : Complete
+    paused --> completed : Complete
+    completed --> [*]
+```
+
+## Experiment evaluation flow
+
+```mermaid
+sequenceDiagram
+    participant client as Client app
+    participant engine as Engine
+    participant persist as Persistence module<br/>(gRPC)
+    participant pub as Publisher module<br/>(gRPC)
+
+    client->>engine: Evaluate experiment for subject
+    engine->>persist: GetAssignment(subject, experiment)
+    persist-->>engine: Assignment or not found
+
+    alt existing assignment
+        engine-->>client: Stored variant
+    else new subject
+        engine->>engine: Allocate variant by percentage
+        engine->>persist: SaveAssignment(subject, experiment, variant)
+        engine->>pub: Publish exposure event
+        engine-->>client: Assigned variant
+    end
+```
+
 ## Technical Notes
 
 - **Implementation**: Extends the evaluation engine; experiment definitions stored alongside flags
-- **Dependencies**: evaluation (variant resolution), persistence (sticky assignments), integrations (exposure/conversion events)
+- **Dependencies**: evaluation (variant resolution), persistence module (sticky assignments via gRPC), integrations modules (exposure/conversion events via gRPC)
