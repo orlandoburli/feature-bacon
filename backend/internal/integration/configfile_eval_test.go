@@ -22,6 +22,11 @@ const (
 	flagNewCheckout = "new-checkout"
 	decodeErrFmt    = "decode: %v"
 	testAddr        = "127.0.0.1:18080"
+	pathEval        = "/api/v1/evaluate"
+	envAuthEnabled  = "BACON_AUTH_ENABLED=true"
+	envAuthDisabled = "BACON_AUTH_ENABLED=false"
+	envAPIKeysKey   = "BACON_API_KEYS="
+	scopeEval       = ":evaluation"
 )
 
 var binaryPath string
@@ -231,7 +236,7 @@ func assertEvalResponse(t *testing.T, resp *http.Response, got *evalResponse, wa
 
 func TestEvaluateSingleFlag(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile, "BACON_AUTH_ENABLED=false")
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -302,7 +307,7 @@ func TestEvaluateSingleFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp := postJSON(t, base+"/api/v1/evaluate", tt.body)
+			resp := postJSON(t, base+pathEval, tt.body)
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
@@ -321,7 +326,7 @@ func TestEvaluateSingleFlag(t *testing.T) {
 
 func TestEvaluateBatch(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile, "BACON_AUTH_ENABLED=false")
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -383,7 +388,7 @@ func TestEvaluateBatch(t *testing.T) {
 
 func TestNotFoundFlag(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile, "BACON_AUTH_ENABLED=false")
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -395,7 +400,7 @@ func TestNotFoundFlag(t *testing.T) {
 		},
 	}
 
-	resp := postJSON(t, base+"/api/v1/evaluate", body)
+	resp := postJSON(t, base+pathEval, body)
 	defer resp.Body.Close()
 
 	var result evalResponse
@@ -414,8 +419,8 @@ func TestNotFoundFlag(t *testing.T) {
 func TestAuth_EnvAPIKey_Unauthorized(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
 	cmd := startServer(t, flagsFile,
-		"BACON_AUTH_ENABLED=true",
-		"BACON_API_KEYS="+testEvalAPIKey+":evaluation",
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
 	)
 	defer stopServer(t, cmd)
 
@@ -425,7 +430,7 @@ func TestAuth_EnvAPIKey_Unauthorized(t *testing.T) {
 		"flagKey": flagDarkMode,
 		"context": map[string]any{"subjectId": userDefault},
 	}
-	resp := postJSON(t, base+"/api/v1/evaluate", body)
+	resp := postJSON(t, base+pathEval, body)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusUnauthorized {
@@ -436,8 +441,8 @@ func TestAuth_EnvAPIKey_Unauthorized(t *testing.T) {
 func TestAuth_EnvAPIKey_ValidKey(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
 	cmd := startServer(t, flagsFile,
-		"BACON_AUTH_ENABLED=true",
-		"BACON_API_KEYS="+testEvalAPIKey+":evaluation",
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
 	)
 	defer stopServer(t, cmd)
 
@@ -447,7 +452,7 @@ func TestAuth_EnvAPIKey_ValidKey(t *testing.T) {
 		"flagKey": flagNewCheckout,
 		"context": map[string]any{"subjectId": userDefault},
 	}
-	resp := postJSON(t, base+"/api/v1/evaluate", body,
+	resp := postJSON(t, base+pathEval, body,
 		"Authorization", "ApiKey "+testEvalAPIKey,
 	)
 	defer resp.Body.Close()
@@ -466,8 +471,8 @@ func TestAuth_EnvAPIKey_ValidKey(t *testing.T) {
 func TestAuth_EnvAPIKey_WrongKey(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
 	cmd := startServer(t, flagsFile,
-		"BACON_AUTH_ENABLED=true",
-		"BACON_API_KEYS="+testEvalAPIKey+":evaluation",
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
 	)
 	defer stopServer(t, cmd)
 
@@ -477,7 +482,7 @@ func TestAuth_EnvAPIKey_WrongKey(t *testing.T) {
 		"flagKey": flagDarkMode,
 		"context": map[string]any{"subjectId": userDefault},
 	}
-	resp := postJSON(t, base+"/api/v1/evaluate", body,
+	resp := postJSON(t, base+pathEval, body,
 		"Authorization", "ApiKey ba_eval_wrongkey",
 	)
 	defer resp.Body.Close()
@@ -498,7 +503,7 @@ func writeKeysConfigFile(t *testing.T) string {
 
 func TestAuth_ConfigFileKey(t *testing.T) {
 	flagsFile := writeKeysConfigFile(t)
-	cmd := startServer(t, flagsFile, "BACON_AUTH_ENABLED=true")
+	cmd := startServer(t, flagsFile, envAuthEnabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -507,7 +512,7 @@ func TestAuth_ConfigFileKey(t *testing.T) {
 		"flagKey": flagDarkMode,
 		"context": map[string]any{"subjectId": userDefault},
 	}
-	resp := postJSON(t, base+"/api/v1/evaluate", body,
+	resp := postJSON(t, base+pathEval, body,
 		"Authorization", "ApiKey ba_eval_cfgkey123",
 	)
 	defer resp.Body.Close()
@@ -528,8 +533,8 @@ func TestAuth_ConfigFileKey(t *testing.T) {
 func TestAuth_HealthzNoAuth(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
 	cmd := startServer(t, flagsFile,
-		"BACON_AUTH_ENABLED=true",
-		"BACON_API_KEYS="+testEvalAPIKey+":evaluation",
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
 	)
 	defer stopServer(t, cmd)
 
