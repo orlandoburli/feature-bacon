@@ -22,6 +22,11 @@ const (
 	flagNewCheckout = "new-checkout"
 	decodeErrFmt    = "decode: %v"
 	testAddr        = "127.0.0.1:18080"
+	pathEval        = "/api/v1/evaluate"
+	envAuthEnabled  = "BACON_AUTH_ENABLED=true"
+	envAuthDisabled = "BACON_AUTH_ENABLED=false"
+	envAPIKeysKey   = "BACON_API_KEYS="
+	scopeEval       = ":evaluation"
 )
 
 var binaryPath string
@@ -48,8 +53,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// Uses _default tenant because no auth middleware sets tenant context yet.
-// Second tenant (acme) included to satisfy multi-tenant YAML structure.
+const testEvalAPIKey = "ba_eval_integrationtest123"
+
 const flagsYAML = `tenants:
   _default:
     flags:
@@ -105,6 +110,24 @@ const flagsYAML = `tenants:
           variant: stable
 `
 
+const flagsWithKeysYAML = `tenants:
+  _default:
+    api_keys:
+      - key: ba_eval_cfgkey123
+        scope: evaluation
+        name: config eval key
+    flags:
+      - key: ` + flagDarkMode + `
+        type: boolean
+        semantics: deterministic
+        enabled: true
+        description: Dark mode toggle
+        rules: []
+        defaultResult:
+          enabled: true
+          variant: "on"
+`
+
 type evalResponse struct {
 	TenantID string `json:"tenantId"`
 	FlagKey  string `json:"flagKey"`
@@ -117,7 +140,7 @@ type batchResponse struct {
 	Results []evalResponse `json:"results"`
 }
 
-func startServer(t *testing.T, flagsFile string) *exec.Cmd {
+func startServer(t *testing.T, flagsFile string, extraEnv ...string) *exec.Cmd {
 	t.Helper()
 
 	cmd := exec.Command(binaryPath)
@@ -126,6 +149,7 @@ func startServer(t *testing.T, flagsFile string) *exec.Cmd {
 		"BACON_CONFIG_FILE="+flagsFile,
 		"BACON_HTTP_ADDR="+testAddr,
 	)
+	cmd.Env = append(cmd.Env, extraEnv...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -167,13 +191,21 @@ func writeFlagsFile(t *testing.T) string {
 	return tmp
 }
 
-func postJSON(t *testing.T, url string, body any) *http.Response {
+func postJSON(t *testing.T, url string, body any, headers ...string) *http.Response {
 	t.Helper()
 	data, err := json.Marshal(body)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	resp, err := http.Post(url, "application/json", bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for i := 0; i+1 < len(headers); i += 2 {
+		req.Header.Set(headers[i], headers[i+1])
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("POST %s: %v", url, err)
 	}
@@ -204,7 +236,7 @@ func assertEvalResponse(t *testing.T, resp *http.Response, got *evalResponse, wa
 
 func TestEvaluateSingleFlag(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile)
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -275,7 +307,7 @@ func TestEvaluateSingleFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp := postJSON(t, base+"/api/v1/evaluate", tt.body)
+			resp := postJSON(t, base+pathEval, tt.body)
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
@@ -294,7 +326,7 @@ func TestEvaluateSingleFlag(t *testing.T) {
 
 func TestEvaluateBatch(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile)
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -356,7 +388,7 @@ func TestEvaluateBatch(t *testing.T) {
 
 func TestNotFoundFlag(t *testing.T) {
 	flagsFile := writeFlagsFile(t)
-	cmd := startServer(t, flagsFile)
+	cmd := startServer(t, flagsFile, envAuthDisabled)
 	defer stopServer(t, cmd)
 
 	base := fmt.Sprintf(baseURLFmt, testAddr)
@@ -368,7 +400,7 @@ func TestNotFoundFlag(t *testing.T) {
 		},
 	}
 
-	resp := postJSON(t, base+"/api/v1/evaluate", body)
+	resp := postJSON(t, base+pathEval, body)
 	defer resp.Body.Close()
 
 	var result evalResponse
@@ -381,5 +413,139 @@ func TestNotFoundFlag(t *testing.T) {
 	}
 	if result.Reason != "not_found" {
 		t.Errorf("reason = %q, want %q", result.Reason, "not_found")
+	}
+}
+
+func TestAuth_EnvAPIKey_Unauthorized(t *testing.T) {
+	flagsFile := writeFlagsFile(t)
+	cmd := startServer(t, flagsFile,
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
+	)
+	defer stopServer(t, cmd)
+
+	base := fmt.Sprintf(baseURLFmt, testAddr)
+
+	body := map[string]any{
+		"flagKey": flagDarkMode,
+		"context": map[string]any{"subjectId": userDefault},
+	}
+	resp := postJSON(t, base+pathEval, body)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without key, got %d", resp.StatusCode)
+	}
+}
+
+func TestAuth_EnvAPIKey_ValidKey(t *testing.T) {
+	flagsFile := writeFlagsFile(t)
+	cmd := startServer(t, flagsFile,
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
+	)
+	defer stopServer(t, cmd)
+
+	base := fmt.Sprintf(baseURLFmt, testAddr)
+
+	body := map[string]any{
+		"flagKey": flagNewCheckout,
+		"context": map[string]any{"subjectId": userDefault},
+	}
+	resp := postJSON(t, base+pathEval, body,
+		"Authorization", "ApiKey "+testEvalAPIKey,
+	)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with valid key, got %d", resp.StatusCode)
+	}
+
+	var result evalResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf(decodeErrFmt, err)
+	}
+	assertEvalResponse(t, resp, &result, flagNewCheckout, true, "v2", "default")
+}
+
+func TestAuth_EnvAPIKey_WrongKey(t *testing.T) {
+	flagsFile := writeFlagsFile(t)
+	cmd := startServer(t, flagsFile,
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
+	)
+	defer stopServer(t, cmd)
+
+	base := fmt.Sprintf(baseURLFmt, testAddr)
+
+	body := map[string]any{
+		"flagKey": flagDarkMode,
+		"context": map[string]any{"subjectId": userDefault},
+	}
+	resp := postJSON(t, base+pathEval, body,
+		"Authorization", "ApiKey ba_eval_wrongkey",
+	)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 with wrong key, got %d", resp.StatusCode)
+	}
+}
+
+func writeKeysConfigFile(t *testing.T) string {
+	t.Helper()
+	tmp := filepath.Join(t.TempDir(), "flags-keys.yaml")
+	if err := os.WriteFile(tmp, []byte(flagsWithKeysYAML), 0644); err != nil {
+		t.Fatalf("write flags-keys file: %v", err)
+	}
+	return tmp
+}
+
+func TestAuth_ConfigFileKey(t *testing.T) {
+	flagsFile := writeKeysConfigFile(t)
+	cmd := startServer(t, flagsFile, envAuthEnabled)
+	defer stopServer(t, cmd)
+
+	base := fmt.Sprintf(baseURLFmt, testAddr)
+
+	body := map[string]any{
+		"flagKey": flagDarkMode,
+		"context": map[string]any{"subjectId": userDefault},
+	}
+	resp := postJSON(t, base+pathEval, body,
+		"Authorization", "ApiKey ba_eval_cfgkey123",
+	)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with config file key, got %d", resp.StatusCode)
+	}
+
+	var result evalResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf(decodeErrFmt, err)
+	}
+	if !result.Enabled {
+		t.Error("expected enabled = true")
+	}
+}
+
+func TestAuth_HealthzNoAuth(t *testing.T) {
+	flagsFile := writeFlagsFile(t)
+	cmd := startServer(t, flagsFile,
+		envAuthEnabled,
+		envAPIKeysKey+testEvalAPIKey+scopeEval,
+	)
+	defer stopServer(t, cmd)
+
+	base := fmt.Sprintf(baseURLFmt, testAddr)
+	resp, err := http.Get(base + "/healthz")
+	if err != nil {
+		t.Fatalf("GET /healthz: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected healthz 200 without auth, got %d", resp.StatusCode)
 	}
 }

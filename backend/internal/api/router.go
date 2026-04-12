@@ -19,24 +19,28 @@ type RouterConfig struct {
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
-	mux := http.NewServeMux()
-
-	evalChain := applyScope(auth.ScopeEvaluation, cfg.AuthDisabled)
-	mux.Handle("POST /api/v1/evaluate", evalChain(handlers.HandleEvaluate(cfg.Engine)))
-	mux.Handle("POST /api/v1/evaluate/batch", evalChain(handlers.HandleEvaluateBatch(cfg.Engine)))
-	mux.HandleFunc("GET /healthz", handlers.HandleHealthz())
-	mux.HandleFunc("GET /readyz", handlers.HandleReadyz())
-
 	authMW := middleware.Auth(middleware.AuthDeps{
 		KeyStore:     cfg.KeyStore,
 		JWTValidator: cfg.JWTValidator,
 		JWTEnabled:   cfg.JWTEnabled,
 	}, cfg.AuthDisabled)
 	tenantMW := middleware.TenantResolver(cfg.AuthDisabled)
+	evalChain := applyScope(auth.ScopeEvaluation, cfg.AuthDisabled)
 
-	var h http.Handler = mux
-	h = tenantMW(h)
-	h = authMW(h)
+	apiMux := http.NewServeMux()
+	apiMux.Handle("POST /api/v1/evaluate", evalChain(handlers.HandleEvaluate(cfg.Engine)))
+	apiMux.Handle("POST /api/v1/evaluate/batch", evalChain(handlers.HandleEvaluateBatch(cfg.Engine)))
+
+	var protectedAPI http.Handler = apiMux
+	protectedAPI = tenantMW(protectedAPI)
+	protectedAPI = authMW(protectedAPI)
+
+	root := http.NewServeMux()
+	root.HandleFunc("GET /healthz", handlers.HandleHealthz())
+	root.HandleFunc("GET /readyz", handlers.HandleReadyz())
+	root.Handle("/api/", protectedAPI)
+
+	var h http.Handler = root
 	h = middleware.Correlation(h)
 	h = middleware.VersionHeader(h)
 	return h
