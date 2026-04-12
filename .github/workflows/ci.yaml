@@ -147,6 +147,10 @@ jobs:
               echo "::warning::Could not disable automatic analysis via API — disable it manually in SonarCloud project settings"
             fi
 
+            curl -s -X POST -u "$SONAR_TOKEN:" "$API/project_branches/rename" \
+              -d "project=$SONAR_PROJECT_KEY" \
+              -d "name=${{ github.event.repository.default_branch || 'main' }}"
+
             echo "::notice::SonarCloud project created"
           else
             echo "SonarCloud project already exists, skipping creation."
