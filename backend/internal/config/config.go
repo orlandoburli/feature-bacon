@@ -17,6 +17,11 @@ type Config struct {
 	JWTJWKSURL     string
 	JWTTenantClaim string
 	JWTScopeClaim  string
+
+	PersistenceAddr string // gRPC address for persistence module
+	TLSCA           string
+	TLSCert         string
+	TLSKey          string
 }
 
 func Load() Config {
@@ -35,6 +40,11 @@ func Load() Config {
 		JWTJWKSURL:     os.Getenv("BACON_JWT_JWKS_URL"),
 		JWTTenantClaim: envOrDefault("BACON_JWT_TENANT_CLAIM", "tenant"),
 		JWTScopeClaim:  os.Getenv("BACON_JWT_SCOPE_CLAIM"),
+
+		PersistenceAddr: os.Getenv("BACON_PERSISTENCE_ADDR"),
+		TLSCA:           os.Getenv("BACON_TLS_CA"),
+		TLSCert:         os.Getenv("BACON_TLS_CERT"),
+		TLSKey:          os.Getenv("BACON_TLS_KEY"),
 	}
 }
 
