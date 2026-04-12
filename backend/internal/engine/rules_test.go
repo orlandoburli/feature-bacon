@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	attrCountry = "attributes.country"
-	attrVal     = "attributes.val"
+	attrCountry   = "attributes.country"
+	attrVal       = "attributes.val"
+	attrUserAgent = "attributes.user_agent"
 )
 
 func baseCtx() EvaluationContext {
@@ -183,7 +184,7 @@ func TestEvaluateCondition_GreaterThan_IntTypes(t *testing.T) {
 
 func TestEvaluateCondition_Regex(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.user_agent", Operator: OpRegex, Value: "^Mozilla.*"}
+	cond := Condition{Attribute: attrUserAgent, Operator: OpRegex, Value: "^Mozilla.*"}
 	if !EvaluateCondition(cond, ctx) {
 		t.Error("expected regex to match")
 	}
@@ -197,7 +198,7 @@ func TestEvaluateCondition_Regex(t *testing.T) {
 func TestEvaluateCondition_Regex_TooLong(t *testing.T) {
 	ctx := baseCtx()
 	longPattern := strings.Repeat("a", maxRegexPatternLen+1)
-	cond := Condition{Attribute: "attributes.user_agent", Operator: OpRegex, Value: longPattern}
+	cond := Condition{Attribute: attrUserAgent, Operator: OpRegex, Value: longPattern}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected oversized regex pattern to not match")
 	}
@@ -205,7 +206,7 @@ func TestEvaluateCondition_Regex_TooLong(t *testing.T) {
 
 func TestEvaluateCondition_Regex_Invalid(t *testing.T) {
 	ctx := baseCtx()
-	cond := Condition{Attribute: "attributes.user_agent", Operator: OpRegex, Value: "[invalid"}
+	cond := Condition{Attribute: attrUserAgent, Operator: OpRegex, Value: "[invalid"}
 	if EvaluateCondition(cond, ctx) {
 		t.Error("expected invalid regex to not match")
 	}
