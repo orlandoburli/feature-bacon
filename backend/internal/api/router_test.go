@@ -49,7 +49,7 @@ func (s *stubStore) ListFlagKeys(_ string) ([]string, error) {
 }
 
 func TestNewRouter_Healthz(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -69,7 +69,7 @@ func TestNewRouter_Healthz(t *testing.T) {
 }
 
 func TestNewRouter_Readyz(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
@@ -82,7 +82,7 @@ func TestNewRouter_Readyz(t *testing.T) {
 }
 
 func TestNewRouter_Evaluate(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"user-1"}}`
@@ -105,7 +105,7 @@ func TestNewRouter_Evaluate(t *testing.T) {
 }
 
 func TestNewRouter_EvaluateBatch(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	body := `{"flagKeys":["` + flagKeyTestFlag + `"],"context":{"subjectId":"user-1"}}`
@@ -120,7 +120,7 @@ func TestNewRouter_EvaluateBatch(t *testing.T) {
 }
 
 func TestNewRouter_CorrelationID_Echo(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -134,7 +134,7 @@ func TestNewRouter_CorrelationID_Echo(t *testing.T) {
 }
 
 func TestNewRouter_AuthEnabled_Unauthorized(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := NewRouter(RouterConfig{
 		Engine:       eng,
 		AuthDisabled: false,
@@ -152,7 +152,7 @@ func TestNewRouter_AuthEnabled_Unauthorized(t *testing.T) {
 }
 
 func TestNewRouter_AuthEnabled_ValidKey(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	store := auth.NewMemKeyStore()
 	rawKey := "ba_eval_routertest"
 	store.Add(&auth.APIKey{
@@ -179,7 +179,7 @@ func TestNewRouter_AuthEnabled_ValidKey(t *testing.T) {
 }
 
 func TestNewRouter_MethodNotAllowed(t *testing.T) {
-	eng := engine.New(&stubStore{})
+	eng := engine.New(&stubStore{}, nil)
 	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, pathEvalEndpoint, nil)

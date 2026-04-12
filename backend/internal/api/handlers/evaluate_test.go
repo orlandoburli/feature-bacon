@@ -62,7 +62,7 @@ func newTestEngine() *engine.Engine {
 			},
 		},
 	}
-	return engine.New(store)
+	return engine.New(store, nil)
 }
 
 func TestHandleEvaluate_Success(t *testing.T) {

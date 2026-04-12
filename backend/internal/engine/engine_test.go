@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 // stubStore is a simple in-memory FlagStore for testing.
@@ -51,14 +52,14 @@ func newStore(flags ...*FlagDefinition) *stubStore {
 
 func TestEngine_Store(t *testing.T) {
 	store := newStore()
-	eng := New(store)
+	eng := New(store, nil)
 	if eng.Store() != store {
 		t.Error("expected Store() to return the underlying FlagStore")
 	}
 }
 
 func TestEvaluate_NotFound(t *testing.T) {
-	eng := New(newStore())
+	eng := New(newStore(), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	result := eng.Evaluate("nonexistent", ctx)
@@ -78,7 +79,7 @@ func TestEvaluate_DisabledFlag(t *testing.T) {
 		Semantics: SemanticsDeterministic,
 		Enabled:   false,
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	result := eng.Evaluate("old_feature", ctx)
@@ -93,7 +94,7 @@ func TestEvaluate_DisabledFlag(t *testing.T) {
 
 func TestEvaluate_StoreError(t *testing.T) {
 	store := &stubStore{err: errors.New("connection lost")}
-	eng := New(store)
+	eng := New(store, nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	result := eng.Evaluate("any_flag", ctx)
@@ -121,7 +122,7 @@ func TestEvaluate_DeterministicRuleMatch(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: true, Variant: "control"},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{
 		TenantID:  "acme",
 		SubjectID: "user_123",
@@ -158,7 +159,7 @@ func TestEvaluate_DefaultResult(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: true, Variant: "control"},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{
 		TenantID:  "acme",
 		SubjectID: "user_123",
@@ -192,7 +193,7 @@ func TestEvaluate_RolloutPercentageFilters(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_123"}
 
 	result := eng.Evaluate("gradual_rollout", ctx)
@@ -222,7 +223,7 @@ func TestEvaluate_FirstMatchWins(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false, Variant: "default"},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{
 		TenantID:  "acme",
 		SubjectID: "user_123",
@@ -252,7 +253,7 @@ func TestEvaluate_BooleanFlag(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	result := eng.Evaluate("maintenance_mode", ctx)
@@ -284,7 +285,7 @@ func TestEvaluate_TenantIsolation(t *testing.T) {
 			},
 		},
 	}
-	eng := New(store)
+	eng := New(store, nil)
 
 	acmeResult := eng.Evaluate("dark_mode", EvaluationContext{TenantID: "acme", SubjectID: "u1"})
 	if !acmeResult.Enabled {
@@ -303,7 +304,7 @@ func TestEvaluate_WrongTenant(t *testing.T) {
 		Enabled: true,
 		Rules:   []Rule{{Conditions: nil, RolloutPercentage: 100}},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 
 	result := eng.Evaluate("some_flag", EvaluationContext{TenantID: "other_tenant", SubjectID: "u1"})
 
@@ -324,7 +325,7 @@ func TestEvaluateBatch(t *testing.T) {
 			Enabled: false,
 		},
 	}
-	eng := New(newStore(flags...))
+	eng := New(newStore(flags...), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	results := eng.EvaluateBatch([]string{"flag_a", "flag_b", "nonexistent"}, ctx)
@@ -357,7 +358,7 @@ func TestEvaluate_RandomSemantics(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_123"}
 
 	enabledCount := 0
@@ -389,7 +390,7 @@ func TestEvaluate_RandomZeroPercent(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_123"}
 
 	result := eng.Evaluate("random_zero", ctx)
@@ -412,7 +413,7 @@ func TestEvaluate_RandomHundredPercent(t *testing.T) {
 		},
 		DefaultResult: EvalResult{Enabled: false},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_123"}
 
 	for i := 0; i < 100; i++ {
@@ -437,7 +438,7 @@ func TestEvaluate_ResultFields(t *testing.T) {
 			},
 		},
 	}
-	eng := New(newStore(flag))
+	eng := New(newStore(flag), nil)
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
 
 	result := eng.Evaluate("my_flag", ctx)
@@ -447,5 +448,101 @@ func TestEvaluate_ResultFields(t *testing.T) {
 	}
 	if result.FlagKey != "my_flag" {
 		t.Errorf("expected flagKey my_flag, got %s", result.FlagKey)
+	}
+}
+
+// stubAssignmentStore is an in-memory AssignmentStore for testing.
+type stubAssignmentStore struct {
+	data map[string]*Assignment // key: "tenant/subject/flag"
+	err  error
+}
+
+func newStubAssignmentStore() *stubAssignmentStore {
+	return &stubAssignmentStore{data: make(map[string]*Assignment)}
+}
+
+func (s *stubAssignmentStore) key(tid, sid, fk string) string {
+	return tid + "/" + sid + "/" + fk
+}
+
+func (s *stubAssignmentStore) GetAssignment(tenantID, subjectID, flagKey string) (*Assignment, bool, error) {
+	if s.err != nil {
+		return nil, false, s.err
+	}
+	a, ok := s.data[s.key(tenantID, subjectID, flagKey)]
+	return a, ok, nil
+}
+
+func (s *stubAssignmentStore) SaveAssignment(tenantID string, a *Assignment) error {
+	if s.err != nil {
+		return s.err
+	}
+	s.data[s.key(tenantID, a.SubjectID, a.FlagKey)] = a
+	return nil
+}
+
+func TestEvaluate_PersistentFlag_NilStore(t *testing.T) {
+	flag := &FlagDefinition{
+		Key: "sticky_flag", Type: FlagTypeBoolean, Semantics: SemanticsPersistent,
+		Enabled: true,
+		Rules:   []Rule{{Conditions: nil, RolloutPercentage: 100}},
+	}
+	eng := New(newStore(flag), nil)
+	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
+
+	result := eng.Evaluate("sticky_flag", ctx)
+	if !result.Enabled {
+		t.Error("expected enabled")
+	}
+	if result.Reason != ReasonNoPersistence {
+		t.Errorf("expected reason no_persistence, got %s", result.Reason)
+	}
+}
+
+func TestEvaluate_PersistentFlag_SaveAndRetrieve(t *testing.T) {
+	flag := &FlagDefinition{
+		Key: "sticky_flag", Type: FlagTypeVariant, Semantics: SemanticsPersistent,
+		Enabled: true,
+		Rules:   []Rule{{Conditions: nil, RolloutPercentage: 100, Variant: "v1"}},
+	}
+	as := newStubAssignmentStore()
+	eng := New(newStore(flag), as)
+	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
+
+	r1 := eng.Evaluate("sticky_flag", ctx)
+	if r1.Reason != ReasonRuleMatch {
+		t.Errorf("first eval expected rule_match, got %s", r1.Reason)
+	}
+
+	r2 := eng.Evaluate("sticky_flag", ctx)
+	if r2.Reason != ReasonPersisted {
+		t.Errorf("second eval expected persisted, got %s", r2.Reason)
+	}
+	if r2.Variant != r1.Variant {
+		t.Errorf("expected same variant, got %s vs %s", r1.Variant, r2.Variant)
+	}
+}
+
+func TestEvaluate_PersistentFlag_ExistingAssignment(t *testing.T) {
+	flag := &FlagDefinition{
+		Key: "sticky_flag", Type: FlagTypeVariant, Semantics: SemanticsPersistent,
+		Enabled: true,
+		Rules:   []Rule{{Conditions: nil, RolloutPercentage: 100, Variant: "new_variant"}},
+	}
+	as := newStubAssignmentStore()
+	as.data["acme/user_1/sticky_flag"] = &Assignment{
+		SubjectID: "user_1", FlagKey: "sticky_flag",
+		Enabled: true, Variant: "old_variant",
+		AssignedAt: time.Now().Add(-time.Hour),
+	}
+	eng := New(newStore(flag), as)
+	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}
+
+	result := eng.Evaluate("sticky_flag", ctx)
+	if result.Variant != "old_variant" {
+		t.Errorf("expected persisted old_variant, got %s", result.Variant)
+	}
+	if result.Reason != ReasonPersisted {
+		t.Errorf("expected reason persisted, got %s", result.Reason)
 	}
 }

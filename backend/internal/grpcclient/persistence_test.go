@@ -4,8 +4,10 @@ import (
 	"context"
 	"net"
 	"testing"
+	"time"
 
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
+	"github.com/orlandoburli/feature-bacon/internal/engine"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -186,11 +188,12 @@ func TestPersistenceClient_SaveAssignment(t *testing.T) {
 	conn := startMockServer(t)
 	client := NewPersistenceClient(conn)
 
-	err := client.SaveAssignment(tenantDefault, &pb.Assignment{
-		SubjectId: subjectUser1,
-		FlagKey:   flagDarkMode,
-		Enabled:   true,
-		Variant:   "on",
+	err := client.SaveAssignment(tenantDefault, &engine.Assignment{
+		SubjectID:  subjectUser1,
+		FlagKey:    flagDarkMode,
+		Enabled:    true,
+		Variant:    "on",
+		AssignedAt: time.Now(),
 	})
 	if err != nil {
 		t.Fatalf(fmtUnexpectedErr, err)
