@@ -49,6 +49,14 @@ func newStore(flags ...*FlagDefinition) *stubStore {
 	return store
 }
 
+func TestEngine_Store(t *testing.T) {
+	store := newStore()
+	eng := New(store)
+	if eng.Store() != store {
+		t.Error("expected Store() to return the underlying FlagStore")
+	}
+}
+
 func TestEvaluate_NotFound(t *testing.T) {
 	eng := New(newStore())
 	ctx := EvaluationContext{TenantID: "acme", SubjectID: "user_1"}

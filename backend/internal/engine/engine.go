@@ -21,6 +21,11 @@ func New(store FlagStore) *Engine {
 	return &Engine{store: store}
 }
 
+// Store returns the underlying FlagStore.
+func (e *Engine) Store() FlagStore {
+	return e.store
+}
+
 // Evaluate processes a single flag and returns the result.
 func (e *Engine) Evaluate(flagKey string, ctx EvaluationContext) EvaluationResult {
 	flag, err := e.store.GetFlag(ctx.TenantID, flagKey)
