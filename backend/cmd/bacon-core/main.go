@@ -9,7 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/orlandoburli/feature-bacon/internal/api"
+	baconapi "github.com/orlandoburli/feature-bacon/internal/api"
+	"github.com/orlandoburli/feature-bacon/internal/auth"
 	"github.com/orlandoburli/feature-bacon/internal/config"
 	"github.com/orlandoburli/feature-bacon/internal/configfile"
 	"github.com/orlandoburli/feature-bacon/internal/engine"
@@ -21,7 +22,10 @@ func main() {
 
 	cfg := config.Load()
 
-	var store engine.FlagStore
+	var (
+		store     engine.FlagStore
+		fileStore *configfile.Store
+	)
 
 	switch cfg.Persistence {
 	case "file":
@@ -31,13 +35,39 @@ func main() {
 			os.Exit(1)
 		}
 		store = s
+		fileStore = s
 	default:
 		slog.Error("unsupported persistence type", "persistence", cfg.Persistence)
 		os.Exit(1)
 	}
 
+	keyStore := auth.NewMemKeyStore()
+	if err := loadAPIKeys(cfg, keyStore, fileStore); err != nil {
+		slog.Error("failed to load API keys", "error", err)
+		os.Exit(1)
+	}
+
+	var jwtValidator *auth.JWTValidator
+	jwtEnabled := cfg.JWTJWKSURL != ""
+	if jwtEnabled {
+		jwtValidator = auth.NewJWTValidator(auth.JWTConfig{
+			Issuer:      cfg.JWTIssuer,
+			Audience:    cfg.JWTAudience,
+			JWKSURL:     cfg.JWTJWKSURL,
+			TenantClaim: cfg.JWTTenantClaim,
+			ScopeClaim:  cfg.JWTScopeClaim,
+		})
+		slog.Info("JWT authentication enabled", "issuer", cfg.JWTIssuer)
+	}
+
 	eng := engine.New(store)
-	router := api.NewRouter(eng)
+	router := baconapi.NewRouter(baconapi.RouterConfig{
+		Engine:       eng,
+		AuthDisabled: !cfg.AuthEnabled,
+		KeyStore:     keyStore,
+		JWTValidator: jwtValidator,
+		JWTEnabled:   jwtEnabled,
+	})
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -48,12 +78,12 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	if fs, ok := store.(*configfile.Store); ok {
-		go fs.WatchSignal(ctx)
+	if fileStore != nil {
+		go fileStore.WatchSignal(ctx)
 	}
 
 	go func() {
-		slog.Info("starting server", "addr", cfg.HTTPAddr)
+		slog.Info("starting server", "addr", cfg.HTTPAddr, "auth_enabled", cfg.AuthEnabled)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server listen error", "error", err)
 			os.Exit(1)
@@ -69,4 +99,27 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("shutdown error", "error", err)
 	}
+}
+
+func loadAPIKeys(cfg config.Config, keyStore *auth.MemKeyStore, fileStore *configfile.Store) error {
+	if cfg.APIKeys != "" {
+		if err := auth.LoadKeysFromEnv(keyStore, cfg.APIKeys, configfile.DefaultTenant); err != nil {
+			return err
+		}
+		slog.Info("loaded API keys from environment")
+	}
+
+	if fileStore != nil {
+		for tid, entries := range fileStore.APIKeys() {
+			cfgKeys := make([]auth.ConfigFileKey, len(entries))
+			for i, e := range entries {
+				cfgKeys[i] = auth.ConfigFileKey{Key: e.Key, Scope: e.Scope, Name: e.Name}
+			}
+			if err := auth.LoadKeysFromConfig(keyStore, cfgKeys, tid); err != nil {
+				return err
+			}
+		}
+		slog.Info("loaded API keys from config file")
+	}
+	return nil
 }

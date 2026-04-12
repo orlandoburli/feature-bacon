@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/orlandoburli/feature-bacon/internal/auth"
 	"github.com/orlandoburli/feature-bacon/internal/engine"
 )
 
@@ -15,7 +16,16 @@ const (
 	fmtStatusWant     = "status = %d, want %d"
 	headerRequestID   = "X-Request-Id"
 	requestIDCustom42 = "custom-id-42"
+	pathEvalEndpoint  = "/api/v1/evaluate"
 )
+
+func testRouter(eng *engine.Engine) http.Handler {
+	return NewRouter(RouterConfig{
+		Engine:       eng,
+		AuthDisabled: true,
+		KeyStore:     auth.NewMemKeyStore(),
+	})
+}
 
 type stubStore struct{}
 
@@ -40,7 +50,7 @@ func (s *stubStore) ListFlagKeys(_ string) ([]string, error) {
 
 func TestNewRouter_Healthz(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()
@@ -60,7 +70,7 @@ func TestNewRouter_Healthz(t *testing.T) {
 
 func TestNewRouter_Readyz(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 	w := httptest.NewRecorder()
@@ -73,10 +83,10 @@ func TestNewRouter_Readyz(t *testing.T) {
 
 func TestNewRouter_Evaluate(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
 	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"user-1"}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -96,7 +106,7 @@ func TestNewRouter_Evaluate(t *testing.T) {
 
 func TestNewRouter_EvaluateBatch(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
 	body := `{"flagKeys":["` + flagKeyTestFlag + `"],"context":{"subjectId":"user-1"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/evaluate/batch", bytes.NewBufferString(body))
@@ -111,7 +121,7 @@ func TestNewRouter_EvaluateBatch(t *testing.T) {
 
 func TestNewRouter_CorrelationID_Echo(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	req.Header.Set(headerRequestID, requestIDCustom42)
@@ -123,11 +133,56 @@ func TestNewRouter_CorrelationID_Echo(t *testing.T) {
 	}
 }
 
+func TestNewRouter_AuthEnabled_Unauthorized(t *testing.T) {
+	eng := engine.New(&stubStore{})
+	router := NewRouter(RouterConfig{
+		Engine:       eng,
+		AuthDisabled: false,
+		KeyStore:     auth.NewMemKeyStore(),
+	})
+
+	body := `{"flagKey":"test-flag","context":{"subjectId":"u1"}}`
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestNewRouter_AuthEnabled_ValidKey(t *testing.T) {
+	eng := engine.New(&stubStore{})
+	store := auth.NewMemKeyStore()
+	rawKey := "ba_eval_routertest"
+	store.Add(&auth.APIKey{
+		ID:       "rk1",
+		TenantID: "_default",
+		KeyHash:  auth.HashKey(rawKey),
+		Scope:    auth.ScopeEvaluation,
+	})
+	router := NewRouter(RouterConfig{
+		Engine:       eng,
+		AuthDisabled: false,
+		KeyStore:     store,
+	})
+
+	body := `{"flagKey":"` + flagKeyTestFlag + `","context":{"subjectId":"u1"}}`
+	req := httptest.NewRequest(http.MethodPost, pathEvalEndpoint, bytes.NewBufferString(body))
+	req.Header.Set("Authorization", "ApiKey "+rawKey)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
 func TestNewRouter_MethodNotAllowed(t *testing.T) {
 	eng := engine.New(&stubStore{})
-	router := NewRouter(eng)
+	router := testRouter(eng)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/evaluate", nil)
+	req := httptest.NewRequest(http.MethodGet, pathEvalEndpoint, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
