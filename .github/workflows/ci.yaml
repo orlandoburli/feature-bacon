@@ -116,6 +116,38 @@ jobs:
         run: |
           echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
 
+      - name: Ensure SonarCloud project exists
+        if: env.HAS_SONAR_TOKEN == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: orlandoburli_feature-bacon
+          SONAR_ORG: orlandoburli
+          SONAR_PROJECT_NAME: Feature Bacon - Backend
+        run: |
+          API="https://sonarcloud.io/api"
+
+          TOTAL=$(curl -sf -u "$SONAR_TOKEN:" \
+            "$API/projects/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY" \
+            | jq '.paging.total')
+
+          if [ "$TOTAL" = "0" ]; then
+            echo "::notice::Creating SonarCloud project $SONAR_PROJECT_KEY"
+            curl -sf -X POST -u "$SONAR_TOKEN:" "$API/projects/create" \
+              -d "name=$SONAR_PROJECT_NAME" \
+              -d "project=$SONAR_PROJECT_KEY" \
+              -d "organization=$SONAR_ORG" \
+              -d "visibility=public"
+
+            curl -sf -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
+              -d "key=sonar.autoscan.enabled" \
+              -d "value=false" \
+              -d "component=$SONAR_PROJECT_KEY"
+
+            echo "::notice::SonarCloud project created with automatic analysis disabled"
+          else
+            echo "SonarCloud project already exists, skipping creation."
+          fi
+
       - name: SonarQube Scan Backend
         if: env.HAS_SONAR_TOKEN == 'true'
         uses: SonarSource/sonarqube-scan-action@v7
