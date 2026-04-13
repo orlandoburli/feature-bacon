@@ -35,7 +35,7 @@ public class ProductService {
         server.createContext("/products", svc::handleProducts);
         server.createContext("/health", svc::handleHealth);
         server.start();
-        LOG.info("Product service on :" + port);
+        LOG.info(() -> "Product service on :" + port);
     }
 
     private void handleHome(HttpExchange ex) throws IOException {

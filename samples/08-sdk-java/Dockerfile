@@ -9,6 +9,8 @@ WORKDIR /build/app
 RUN mvn package -q -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
+RUN adduser -D appuser
 COPY --from=builder /build/app/target/product-service-1.0.0.jar /app.jar
+USER appuser
 EXPOSE 3000
 CMD ["java", "-jar", "/app.jar"]

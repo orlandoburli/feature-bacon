@@ -2,6 +2,7 @@ const express = require('express');
 const { BaconClient } = require('feature-bacon');
 
 const app = express();
+app.disable('x-powered-by');
 const port = process.env.PORT || 3000;
 const baconUrl = process.env.BACON_URL || 'http://localhost:8080';
 const apiKey = process.env.BACON_API_KEY || '';
