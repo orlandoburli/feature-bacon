@@ -1,0 +1,67 @@
+flags:
+  - key: dark_mode
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Dark mode — fully enabled in staging for testing"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
+
+  - key: new_search
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "New search — enabled in staging for QA"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
+
+  - key: checkout_v2
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Checkout redesign — 100% in staging"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+        variant: "v2"
+    defaultResult:
+      enabled: true
+      variant: "v1"
+
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Staging kill switch"
+    defaultResult:
+      enabled: false
+
+  - key: rate_limit_tier
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Rate limit tier — all staging gets high tier for testing"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+        variant: "high"
+    defaultResult:
+      enabled: true
+      variant: "standard"
+
+  - key: debug_panel
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Debug panel — staging only, not defined in production"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false

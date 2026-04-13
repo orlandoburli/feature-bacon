@@ -1,0 +1,53 @@
+flags:
+  - key: onboarding_variant
+    type: string
+    semantics: persistent
+    enabled: true
+    description: "Sticky onboarding flow — each user sees the same variant across sessions"
+    persistenceTTL: "168h"
+    rules:
+      - conditions: []
+        rolloutPercentage: 50
+        variant: "new_flow"
+    defaultResult:
+      enabled: true
+      variant: "classic"
+
+  - key: premium_banner
+    type: boolean
+    semantics: persistent
+    enabled: true
+    description: "Show premium upsell banner — sticky per user for 24h"
+    persistenceTTL: "24h"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: equals
+            valueJson: '"free"'
+        rolloutPercentage: 30
+    defaultResult:
+      enabled: false
+
+  - key: search_algorithm
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "A/B test search algorithm — deterministic, no persistence needed"
+    rules:
+      - conditions: []
+        rolloutPercentage: 33
+        variant: "vector"
+      - conditions: []
+        rolloutPercentage: 33
+        variant: "hybrid"
+    defaultResult:
+      enabled: true
+      variant: "keyword"
+
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Kill switch"
+    defaultResult:
+      enabled: false

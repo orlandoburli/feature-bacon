@@ -1,0 +1,73 @@
+flags:
+  - key: dark_mode
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Dark mode — conservative rollout in production"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: in
+            valueJson: '["pro","enterprise"]'
+        rolloutPercentage: 100
+      - conditions: []
+        rolloutPercentage: 10
+    defaultResult:
+      enabled: false
+
+  - key: new_search
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "New search — disabled in production, still under development"
+    defaultResult:
+      enabled: false
+
+  - key: checkout_v2
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Checkout redesign — limited rollout in production"
+    rules:
+      - conditions:
+          - attribute: attributes.beta_tester
+            operator: equals
+            valueJson: "true"
+        rolloutPercentage: 100
+        variant: "v2"
+      - conditions: []
+        rolloutPercentage: 5
+        variant: "v2"
+    defaultResult:
+      enabled: true
+      variant: "v1"
+
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Production kill switch"
+    defaultResult:
+      enabled: false
+
+  - key: rate_limit_tier
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Rate limit tier based on plan"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: equals
+            valueJson: '"enterprise"'
+        rolloutPercentage: 100
+        variant: "unlimited"
+      - conditions:
+          - attribute: attributes.plan
+            operator: equals
+            valueJson: '"pro"'
+        rolloutPercentage: 100
+        variant: "high"
+    defaultResult:
+      enabled: true
+      variant: "standard"
