@@ -1,0 +1,12 @@
+{
+  "name": "feature-bacon-js-sample",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "feature-bacon": "file:../../sdks/javascript"
+  }
+}
