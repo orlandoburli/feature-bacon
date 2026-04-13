@@ -80,7 +80,7 @@ function renderNavigation(isSidebar, currentUser) {
   if (isSidebar) {
     return `
       <nav class="sidebar">
-        <div class="sidebar__brand">Feature Bacon</div>
+        <div class="sidebar__brand"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512" fill="none"><g transform="rotate(-2 256 161)"><rect x="56" y="128" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="136" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="149" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="161" r="8" fill="#fff"/></g><g transform="rotate(0.8 256 256)"><rect x="56" y="223" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="231" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="244" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="256" r="8" fill="#fff"/></g><g transform="rotate(2.5 256 351)"><rect x="56" y="318" width="400" height="66" rx="33" fill="#DC2626" opacity="0.25"/><rect x="92" y="326" width="328" height="10" rx="5" fill="#FEE2E2" opacity="0.25"/><rect x="82" y="339" width="46" height="24" rx="12" fill="#9CA3AF"/><circle cx="94" cy="351" r="8" fill="#fff"/></g></svg> Feature Bacon</div>
         ${navItems}
         <div class="sidebar__divider"></div>
         <div class="sidebar__section">Switch User</div>
@@ -90,7 +90,7 @@ function renderNavigation(isSidebar, currentUser) {
 
   return `
     <nav class="topnav">
-      <div class="topnav__brand">Feature Bacon</div>
+      <div class="topnav__brand"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 512 512" fill="none"><g transform="rotate(-2 256 161)"><rect x="56" y="128" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="136" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="149" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="161" r="8" fill="#fff"/></g><g transform="rotate(0.8 256 256)"><rect x="56" y="223" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="231" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="244" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="256" r="8" fill="#fff"/></g><g transform="rotate(2.5 256 351)"><rect x="56" y="318" width="400" height="66" rx="33" fill="#DC2626" opacity="0.25"/><rect x="92" y="326" width="328" height="10" rx="5" fill="#FEE2E2" opacity="0.25"/><rect x="82" y="339" width="46" height="24" rx="12" fill="#9CA3AF"/><circle cx="94" cy="351" r="8" fill="#fff"/></g></svg> Feature Bacon</div>
       <div class="topnav__links">${navItems}</div>
       <div class="topnav__users">${userLinks}</div>
     </nav>`;
@@ -203,6 +203,7 @@ function renderPage(flags, currentUser) {
     .topnav__brand {
       font-weight: 700; font-size: 1.1rem; color: var(--accent);
       margin-right: auto;
+      display: flex; align-items: center; gap: 8px;
     }
     .topnav__links { display: flex; gap: 0.75rem; }
     .topnav__links a, .topnav__users a {
@@ -226,6 +227,7 @@ function renderPage(flags, currentUser) {
     .sidebar__brand {
       font-weight: 700; font-size: 1.2rem; color: var(--accent);
       margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 8px;
     }
     .sidebar a {
       text-decoration: none; color: var(--muted); font-size: 0.9rem;
@@ -370,6 +372,7 @@ function renderPage(flags, currentUser) {
 
     <main class="main">
       <div class="header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 512 512" fill="none"><g transform="rotate(-2 256 161)"><rect x="56" y="128" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="136" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="149" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="161" r="8" fill="#fff"/></g><g transform="rotate(0.8 256 256)"><rect x="56" y="223" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="231" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="244" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="256" r="8" fill="#fff"/></g><g transform="rotate(2.5 256 351)"><rect x="56" y="318" width="400" height="66" rx="33" fill="#DC2626" opacity="0.25"/><rect x="92" y="326" width="328" height="10" rx="5" fill="#FEE2E2" opacity="0.25"/><rect x="82" y="339" width="46" height="24" rx="12" fill="#9CA3AF"/><circle cx="94" cy="351" r="8" fill="#fff"/></g></svg>
         <h1>UI Feature Flags Demo</h1>
         <p>This page is controlled by Feature Bacon feature flags</p>
         <span class="user-badge">User: ${escapeHtml(currentUser)}</span>

@@ -343,7 +343,7 @@ app.get('/', async (req, res) => {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e1e4e8; line-height: 1.6; }
   .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
-  header { text-align: center; margin-bottom: 2.5rem; }
+  header { text-align: center; margin-bottom: 2.5rem; display: flex; flex-direction: column; align-items: center; }
   header h1 { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #f97316, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   header p { color: #8b949e; font-size: 0.95rem; margin-top: 0.25rem; }
   .user-bar { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 2rem; padding: 1rem; background: #161b22; border: 1px solid #30363d; border-radius: 12px; }
@@ -399,6 +399,7 @@ app.get('/', async (req, res) => {
 <body>
 <div class="container">
   <header>
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 512 512" fill="none"><g transform="rotate(-2 256 161)"><rect x="56" y="128" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="136" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="149" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="161" r="8" fill="#fff"/></g><g transform="rotate(0.8 256 256)"><rect x="56" y="223" width="400" height="66" rx="33" fill="#DC2626"/><rect x="92" y="231" width="328" height="10" rx="5" fill="#FEE2E2"/><rect x="382" y="244" width="46" height="24" rx="12" fill="#22C55E"/><circle cx="416" cy="256" r="8" fill="#fff"/></g><g transform="rotate(2.5 256 351)"><rect x="56" y="318" width="400" height="66" rx="33" fill="#DC2626" opacity="0.25"/><rect x="92" y="326" width="328" height="10" rx="5" fill="#FEE2E2" opacity="0.25"/><rect x="82" y="339" width="46" height="24" rx="12" fill="#9CA3AF"/><circle cx="94" cy="351" r="8" fill="#fff"/></g></svg>
     <h1>Backend Feature Flags</h1>
     <p>Real-time dashboard &mdash; see how flags change backend behavior for each user</p>
   </header>
