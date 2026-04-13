@@ -1,0 +1,185 @@
+name: CI - SDKs & Samples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Go SDK
+  # ---------------------------------------------------------------------------
+  test-sdk-go:
+    name: Test Go SDK
+    runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdks/go/go.mod
+
+      - name: Run tests
+        working-directory: sdks/go
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - uses: ./.github/actions/sonar-onboard
+        if: env.HAS_SONAR_TOKEN == 'true'
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-sdk-go
+          project-name: Feature Bacon - SDK Go
+
+      - name: SonarCloud Scan
+        if: env.HAS_SONAR_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: sdks/go/
+
+  # ---------------------------------------------------------------------------
+  # JavaScript / TypeScript SDK
+  # ---------------------------------------------------------------------------
+  test-sdk-js:
+    name: Test JavaScript SDK
+    runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install and test
+        working-directory: sdks/javascript
+        run: |
+          npm ci
+          npm test -- --coverage
+
+      - uses: ./.github/actions/sonar-onboard
+        if: env.HAS_SONAR_TOKEN == 'true'
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-sdk-js
+          project-name: Feature Bacon - SDK JavaScript
+
+      - name: SonarCloud Scan
+        if: env.HAS_SONAR_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: sdks/javascript/
+
+  # ---------------------------------------------------------------------------
+  # Python SDK
+  # ---------------------------------------------------------------------------
+  test-sdk-python:
+    name: Test Python SDK
+    runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install and test
+        working-directory: sdks/python
+        run: |
+          pip install -e ".[dev]"
+          pytest --cov=feature_bacon --cov-report=xml tests/
+
+      - uses: ./.github/actions/sonar-onboard
+        if: env.HAS_SONAR_TOKEN == 'true'
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-sdk-python
+          project-name: Feature Bacon - SDK Python
+
+      - name: SonarCloud Scan
+        if: env.HAS_SONAR_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: sdks/python/
+
+  # ---------------------------------------------------------------------------
+  # Java SDK
+  # ---------------------------------------------------------------------------
+  test-sdk-java:
+    name: Test Java SDK
+    runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Test with coverage
+        working-directory: sdks/java
+        run: mvn verify
+
+      - uses: ./.github/actions/sonar-onboard
+        if: env.HAS_SONAR_TOKEN == 'true'
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-sdk-java
+          project-name: Feature Bacon - SDK Java
+
+      - name: SonarCloud Scan
+        if: env.HAS_SONAR_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: sdks/java/
+
+  # ---------------------------------------------------------------------------
+  # Sample Projects (code quality only — no tests)
+  # ---------------------------------------------------------------------------
+  scan-samples:
+    name: Scan Samples
+    runs-on: ubuntu-latest
+    env:
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/sonar-onboard
+        if: env.HAS_SONAR_TOKEN == 'true'
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-samples
+          project-name: Feature Bacon - Samples
+
+      - name: SonarCloud Scan
+        if: env.HAS_SONAR_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: samples/

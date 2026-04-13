@@ -119,79 +119,12 @@ jobs:
         run: |
           echo "::warning::Backend coverage ${{ steps.coverage.outputs.total }}% is below the recommended threshold of ${{ env.COVERAGE_WARN_THRESHOLD }}%"
 
-      - name: Ensure SonarCloud project exists
+      - uses: ./.github/actions/sonar-onboard
         if: env.HAS_SONAR_TOKEN == 'true'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: orlandoburli_feature-bacon-backend
-          SONAR_ORG: orlandoburli
-          SONAR_PROJECT_NAME: Feature Bacon - Backend
-        run: |
-          API="https://sonarcloud.io/api"
-
-          TOTAL=$(curl -sf -u "$SONAR_TOKEN:" \
-            "$API/projects/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY" \
-            | jq '.paging.total')
-
-          if [ "$TOTAL" = "0" ]; then
-            echo "::notice::Creating SonarCloud project $SONAR_PROJECT_KEY"
-            curl -sf -X POST -u "$SONAR_TOKEN:" "$API/projects/create" \
-              -d "name=$SONAR_PROJECT_NAME" \
-              -d "project=$SONAR_PROJECT_KEY" \
-              -d "organization=$SONAR_ORG" \
-              -d "visibility=public"
-
-            if curl -s -o /dev/null -w "%{http_code}" -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
-              -d "key=sonar.autoscan.enabled" \
-              -d "value=false" \
-              -d "component=$SONAR_PROJECT_KEY" | grep -q "^2"; then
-              echo "::notice::Automatic analysis disabled via API"
-            else
-              echo "::warning::Could not disable automatic analysis via API — disable it manually in SonarCloud project settings"
-            fi
-
-            echo "::notice::SonarCloud project created"
-          else
-            echo "SonarCloud project already exists, skipping creation."
-          fi
-
-      - name: Ensure SonarCloud main branch
-        if: env.HAS_SONAR_TOKEN == 'true'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: orlandoburli_feature-bacon-backend
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
-        run: |
-          API="https://sonarcloud.io/api"
-
-          BRANCHES=$(curl -sf -u "$SONAR_TOKEN:" \
-            "$API/project_branches/list?project=$SONAR_PROJECT_KEY") || exit 0
-
-          SONAR_MAIN=$(echo "$BRANCHES" | jq -r '.branches[] | select(.isMain==true) | .name')
-
-          if [ "$SONAR_MAIN" = "$DEFAULT_BRANCH" ]; then
-            echo "SonarCloud main branch is already '$DEFAULT_BRANCH'."
-            exit 0
-          fi
-
-          echo "::notice::SonarCloud main branch is '$SONAR_MAIN', expected '$DEFAULT_BRANCH'"
-
-          CONFLICT=$(echo "$BRANCHES" | jq -r --arg b "$DEFAULT_BRANCH" \
-            '.branches[] | select(.isMain==false and .name==$b) | .name')
-
-          if [ -n "$CONFLICT" ]; then
-            echo "Deleting conflicting branch '$CONFLICT'..."
-            curl -sf -X POST -u "$SONAR_TOKEN:" "$API/project_branches/delete" \
-              -d "project=$SONAR_PROJECT_KEY" \
-              -d "branch=$CONFLICT"
-          fi
-
-          echo "Renaming '$SONAR_MAIN' to '$DEFAULT_BRANCH'..."
-          curl -sf -X POST -u "$SONAR_TOKEN:" "$API/project_branches/rename" \
-            -d "project=$SONAR_PROJECT_KEY" \
-            -d "name=$DEFAULT_BRANCH"
-
-          echo "::notice::SonarCloud main branch renamed to '$DEFAULT_BRANCH'"
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: orlandoburli_feature-bacon-backend
+          project-name: Feature Bacon - Backend
 
       - name: SonarQube Scan Backend
         if: env.HAS_SONAR_TOKEN == 'true'
