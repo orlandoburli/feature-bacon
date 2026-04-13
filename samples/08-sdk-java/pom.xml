@@ -12,7 +12,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.featurebacon</groupId>
+            <groupId>io.github.orlandoburli</groupId>
             <artifactId>feature-bacon-sdk</artifactId>
             <version>0.1.0</version>
         </dependency>

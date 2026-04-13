@@ -247,7 +247,7 @@ jobs:
           | Go | \`go get github.com/${{ github.repository }}/sdks/go@v${VERSION}\` | v${VERSION} |
           | JavaScript | \`npm install feature-bacon@${VERSION}\` | ${VERSION} |
           | Python | \`pip install feature-bacon==${VERSION}\` | ${VERSION} |
-          | Java | \`io.featurebacon:feature-bacon-sdk:${VERSION}\` | ${VERSION} |
+          | Java | \`io.github.orlandoburli:feature-bacon-sdk:${VERSION}\` | ${VERSION} |
           EOF
 
           gh release create "$GITHUB_REF_NAME" \
