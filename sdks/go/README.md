@@ -1,11 +1,11 @@
-# feature-bacon-go
+# Feature Bacon Go SDK
 
 Go SDK for [Feature Bacon](https://github.com/orlandoburli/feature-bacon) — a feature flag evaluation service.
 
 ## Installation
 
 ```bash
-go get github.com/orlandoburli/feature-bacon-go
+go get github.com/orlandoburli/feature-bacon/sdks/go
 ```
 
 ## Quick Start
@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"log"
 
-	bacon "github.com/orlandoburli/feature-bacon-go"
+	bacon "github.com/orlandoburli/feature-bacon/sdks/go"
 )
 
 func main() {
