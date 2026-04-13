@@ -153,10 +153,10 @@ func (m *mockPersistenceServer) GetAPIKeyByHash(_ context.Context, req *pb.GetAP
 				KeyHash:   "known-hash",
 				KeyPrefix: "ba_eval_",
 				Scope:     "evaluation",
-Name:      nameTestKey,
-			CreatedAt: 1700000000,
-		},
-		TenantId: tenantDefault,
+				Name:      nameTestKey,
+				CreatedAt: 1700000000,
+			},
+			TenantId: tenantDefault,
 		}, nil
 	}
 	return &pb.GetAPIKeyByHashResponse{Found: false}, nil
