@@ -25,6 +25,7 @@ const (
 	pathAPIFlags       = "/api/v1/flags"
 	pathAPIExperiments = "/api/v1/experiments"
 	expKeyOnboarding   = "onboarding"
+	pathAPIKeys        = "/api/v1/api-keys"
 )
 
 type stubFlagManager struct{}
@@ -79,6 +80,22 @@ func (s *stubExperimentManager) UpdateExperiment(_ context.Context, _ string, e 
 
 var _ handlers.ExperimentManager = (*stubExperimentManager)(nil)
 
+type stubAPIKeyManager struct{}
+
+func (s *stubAPIKeyManager) ListAPIKeys(_ context.Context, _ string, _, _ int) ([]*pb.APIKey, int, error) {
+	return []*pb.APIKey{{Id: "ak-1", KeyPrefix: "ba_eval_", Scope: "evaluation", Name: "test-key"}}, 1, nil
+}
+
+func (s *stubAPIKeyManager) CreateAPIKey(_ context.Context, _ string, k *pb.APIKey) (*pb.APIKey, error) {
+	k.Id = "ak-1"
+	k.CreatedAt = 1700000000
+	return k, nil
+}
+
+func (s *stubAPIKeyManager) RevokeAPIKey(_ context.Context, _, _ string) error { return nil }
+
+var _ handlers.APIKeyManager = (*stubAPIKeyManager)(nil)
+
 func testRouter(eng *engine.Engine) http.Handler {
 	return NewRouter(RouterConfig{
 		Engine:            eng,
@@ -86,6 +103,7 @@ func testRouter(eng *engine.Engine) http.Handler {
 		KeyStore:          auth.NewMemKeyStore(),
 		FlagManager:       &stubFlagManager{},
 		ExperimentManager: &stubExperimentManager{},
+		APIKeyManager:     &stubAPIKeyManager{},
 	})
 }
 
@@ -401,5 +419,46 @@ func TestNewRouter_ReadOnlyMode(t *testing.T) {
 
 	if w.Code != http.StatusConflict {
 		t.Fatalf(fmtStatusWant, w.Code, http.StatusConflict)
+	}
+}
+
+func TestNewRouter_ListAPIKeys(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, pathAPIKeys, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_CreateAPIKey(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	body := `{"name":"test-key","scope":"evaluation"}`
+	req := httptest.NewRequest(http.MethodPost, pathAPIKeys, bytes.NewBufferString(body))
+	req.Header.Set(headerContentType, contentTypeJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusCreated)
+	}
+}
+
+func TestNewRouter_RevokeAPIKey(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodDelete, pathAPIKeys+"/ak-1", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusNoContent)
 	}
 }

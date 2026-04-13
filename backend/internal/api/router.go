@@ -19,6 +19,7 @@ type RouterConfig struct {
 	ReadOnly          bool
 	FlagManager       handlers.FlagManager
 	ExperimentManager handlers.ExperimentManager
+	APIKeyManager     handlers.APIKeyManager
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
@@ -61,6 +62,16 @@ func NewRouter(cfg RouterConfig) http.Handler {
 
 		apiMux.Handle("/api/v1/experiments", readOnlyMW(expMux))
 		apiMux.Handle("/api/v1/experiments/", readOnlyMW(expMux))
+	}
+
+	if cfg.APIKeyManager != nil {
+		akMux := http.NewServeMux()
+		akMux.Handle("GET /api/v1/api-keys", mgmtChain(handlers.HandleListAPIKeys(cfg.APIKeyManager)))
+		akMux.Handle("POST /api/v1/api-keys", mgmtChain(handlers.HandleCreateAPIKey(cfg.APIKeyManager)))
+		akMux.Handle("DELETE /api/v1/api-keys/{keyId}", mgmtChain(handlers.HandleRevokeAPIKey(cfg.APIKeyManager)))
+
+		apiMux.Handle("/api/v1/api-keys", readOnlyMW(akMux))
+		apiMux.Handle("/api/v1/api-keys/", readOnlyMW(akMux))
 	}
 
 	var protectedAPI http.Handler = apiMux

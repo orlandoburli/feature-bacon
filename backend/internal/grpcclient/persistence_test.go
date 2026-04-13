@@ -19,6 +19,7 @@ const (
 	flagDarkMode            = "dark-mode"
 	subjectUser1            = "user-1"
 	experimentKeyOnboarding = "onboarding"
+	apiKeyIDTest            = "ak-1"
 )
 
 type mockPersistenceServer struct {
@@ -139,6 +140,43 @@ func (m *mockPersistenceServer) GetAssignment(_ context.Context, req *pb.GetAssi
 
 func (m *mockPersistenceServer) SaveAssignment(_ context.Context, _ *pb.SaveAssignmentRequest) (*pb.SaveAssignmentResponse, error) {
 	return &pb.SaveAssignmentResponse{}, nil
+}
+
+func (m *mockPersistenceServer) GetAPIKeyByHash(_ context.Context, req *pb.GetAPIKeyByHashRequest) (*pb.GetAPIKeyByHashResponse, error) {
+	if req.KeyHash == "known-hash" {
+		return &pb.GetAPIKeyByHashResponse{
+			Found: true,
+			ApiKey: &pb.APIKey{
+				Id:        apiKeyIDTest,
+				KeyHash:   "known-hash",
+				KeyPrefix: "ba_eval_",
+				Scope:     "evaluation",
+				Name:      "test-key",
+				CreatedAt: 1700000000,
+			},
+			TenantId: tenantDefault,
+		}, nil
+	}
+	return &pb.GetAPIKeyByHashResponse{Found: false}, nil
+}
+
+func (m *mockPersistenceServer) ListAPIKeys(_ context.Context, _ *pb.ListAPIKeysRequest) (*pb.ListAPIKeysResponse, error) {
+	return &pb.ListAPIKeysResponse{
+		ApiKeys: []*pb.APIKey{
+			{Id: apiKeyIDTest, KeyPrefix: "ba_eval_", Scope: "evaluation", Name: "test-key", CreatedAt: 1700000000},
+		},
+		Pagination: &pb.PageInfo{Total: 1, Page: 1, PerPage: 20, TotalPages: 1},
+	}, nil
+}
+
+func (m *mockPersistenceServer) CreateAPIKey(_ context.Context, req *pb.CreateAPIKeyRequest) (*pb.CreateAPIKeyResponse, error) {
+	req.ApiKey.Id = apiKeyIDTest
+	req.ApiKey.CreatedAt = 1700000000
+	return &pb.CreateAPIKeyResponse{ApiKey: req.ApiKey}, nil
+}
+
+func (m *mockPersistenceServer) RevokeAPIKey(_ context.Context, _ *pb.RevokeAPIKeyRequest) (*pb.RevokeAPIKeyResponse, error) {
+	return &pb.RevokeAPIKeyResponse{}, nil
 }
 
 func startMockServer(t *testing.T) *grpc.ClientConn {
@@ -424,6 +462,53 @@ func TestPersistenceClient_UpdateExperimentManaged(t *testing.T) {
 	}
 	if exp.UpdatedAt != 1700000001 {
 		t.Errorf("expected UpdatedAt 1700000001, got %d", exp.UpdatedAt)
+	}
+}
+
+func TestPersistenceClient_ListAPIKeysManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	keys, total, err := client.ListAPIKeysManaged(context.Background(), tenantDefault, 1, 20)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key, got %d", len(keys))
+	}
+	if total != 1 {
+		t.Errorf("expected total 1, got %d", total)
+	}
+}
+
+func TestPersistenceClient_CreateAPIKeyManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	key, err := client.CreateAPIKeyManaged(context.Background(), tenantDefault, &pb.APIKey{
+		KeyHash:   "abc123",
+		KeyPrefix: "ba_eval_",
+		Scope:     "evaluation",
+		Name:      "test-key",
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if key.Id != apiKeyIDTest {
+		t.Errorf(fmtExpectedKeyGot, apiKeyIDTest, key.Id)
+	}
+	if key.CreatedAt != 1700000000 {
+		t.Errorf("expected CreatedAt 1700000000, got %d", key.CreatedAt)
+	}
+}
+
+func TestPersistenceClient_RevokeAPIKeyManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	err := client.RevokeAPIKeyManaged(context.Background(), tenantDefault, apiKeyIDTest)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
 	}
 }
 
