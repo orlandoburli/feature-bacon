@@ -1,0 +1,76 @@
+flags:
+  - key: dark_mode
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Dark mode UI toggle"
+    rules:
+      - conditions: []
+        rolloutPercentage: 50
+    defaultResult:
+      enabled: false
+
+  - key: new_checkout
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Checkout flow experiment"
+    rules:
+      - conditions: []
+        rolloutPercentage: 30
+        variant: "streamlined"
+      - conditions: []
+        rolloutPercentage: 30
+        variant: "one_click"
+    defaultResult:
+      enabled: true
+      variant: "classic"
+
+  - key: rate_limit_v2
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "New rate limiting algorithm"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: in
+            valueJson: '["premium","enterprise"]'
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
+
+  - key: search_algorithm
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Search algorithm version"
+    rules:
+      - conditions: []
+        rolloutPercentage: 40
+        variant: "ml_powered"
+    defaultResult:
+      enabled: true
+      variant: "keyword_based"
+
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Emergency maintenance mode"
+    defaultResult:
+      enabled: false
+
+  - key: premium_features
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Premium tier features"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: equals
+            valueJson: '"enterprise"'
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
