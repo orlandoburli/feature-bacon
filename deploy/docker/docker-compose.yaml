@@ -97,6 +97,32 @@ services:
       mongodb:
         condition: service_healthy
 
+  # module-sqs:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile.module-sqs
+  #   environment:
+  #     MODULE_SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/123456789012/bacon-events"
+  #     MODULE_GRPC_ADDR: ":50052"
+  #     AWS_REGION: "us-east-1"
+
+  # module-gcppubsub:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile.module-gcppubsub
+  #   environment:
+  #     MODULE_GCP_PROJECT: "my-project"
+  #     MODULE_GCP_TOPIC: "bacon-events"
+  #     MODULE_GRPC_ADDR: ":50052"
+
+  # module-grpcpub:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile.module-grpcpub
+  #   environment:
+  #     MODULE_GRPC_TARGET: "target-publisher:50052"
+  #     MODULE_GRPC_ADDR: ":50052"
+
   bacon-core:
     build:
       context: ../../

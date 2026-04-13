@@ -2,50 +2,26 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/IBM/sarama"
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
+	"github.com/orlandoburli/feature-bacon/internal/pubserver"
 )
 
-type Server struct {
-	pb.UnimplementedPublisherServiceServer
+type kafkaSender struct {
 	producer sarama.SyncProducer
 	topic    string
 }
 
-func New(producer sarama.SyncProducer, topic string) *Server {
-	return &Server{producer: producer, topic: topic}
+func New(producer sarama.SyncProducer, topic string) *pubserver.Server {
+	return pubserver.New(&kafkaSender{producer: producer, topic: topic})
 }
 
-func (s *Server) Publish(ctx context.Context, req *pb.PublishRequest) (*pb.PublishResponse, error) {
-	if req.Event == nil {
-		return &pb.PublishResponse{}, nil
-	}
-	if err := s.send(req.Event); err != nil {
-		return nil, err
-	}
-	return &pb.PublishResponse{}, nil
-}
-
-func (s *Server) PublishBatch(ctx context.Context, req *pb.PublishBatchRequest) (*pb.PublishBatchResponse, error) {
-	for _, event := range req.Events {
-		if err := s.send(event); err != nil {
-			return nil, err
-		}
-	}
-	return &pb.PublishBatchResponse{}, nil
-}
-
-func (s *Server) HealthCheck(ctx context.Context, _ *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
-	return &pb.HealthCheckResponse{Healthy: true, Message: "ok"}, nil
-}
-
-func (s *Server) send(event *pb.Event) error {
-	value, err := json.Marshal(event)
+func (s *kafkaSender) Send(event *pb.Event) error {
+	value, err := pubserver.MarshalEvent(event)
 	if err != nil {
-		return fmt.Errorf("marshal event: %w", err)
+		return err
 	}
 	msg := &sarama.ProducerMessage{
 		Topic: s.topic,
@@ -57,4 +33,12 @@ func (s *Server) send(event *pb.Event) error {
 		return fmt.Errorf("kafka send: %w", err)
 	}
 	return nil
+}
+
+func (s *kafkaSender) Healthy(_ context.Context) (bool, string) {
+	return true, pubserver.HealthyMessage
+}
+
+func (s *kafkaSender) Close() error {
+	return s.producer.Close()
 }
