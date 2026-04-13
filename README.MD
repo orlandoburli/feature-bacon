@@ -1,11 +1,7 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/logo-full.svg">
-    <img alt="Feature Bacon" src="assets/logo-full.svg" width="600">
-  </picture>
+  <img src="assets/logo.svg" width="180" alt="Feature Bacon">
 </p>
-
+<h1 align="center">Feature Bacon</h1>
 <p align="center">
   <strong>Feature flags & experimentation platform</strong>
 </p>
