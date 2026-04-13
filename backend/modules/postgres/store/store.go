@@ -8,14 +8,11 @@ import (
 	"time"
 
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
-)
-
-const (
-	defaultPerPage int32 = 20
-	maxPerPage     int32 = 100
+	"github.com/orlandoburli/feature-bacon/internal/pagination"
 )
 
 type Store struct {
+	pb.UnimplementedPersistenceServiceServer
 	db *sql.DB
 }
 
@@ -25,35 +22,6 @@ func New(db *sql.DB) *Store {
 
 type scanner interface {
 	Scan(dest ...any) error
-}
-
-func paginate(pr *pb.PageRequest) (page, perPage int32) {
-	page, perPage = 1, defaultPerPage
-	if pr != nil {
-		if pr.Page > 0 {
-			page = pr.Page
-		}
-		if pr.PerPage > 0 {
-			perPage = pr.PerPage
-		}
-	}
-	if perPage > maxPerPage {
-		perPage = maxPerPage
-	}
-	return page, perPage
-}
-
-func pageInfo(page, perPage, total int32) *pb.PageInfo {
-	totalPages := total / perPage
-	if total%perPage > 0 {
-		totalPages++
-	}
-	return &pb.PageInfo{
-		Page:       page,
-		PerPage:    perPage,
-		Total:      total,
-		TotalPages: totalPages,
-	}
 }
 
 func scanFlag(s scanner) (*pb.FlagDefinition, error) {
@@ -168,7 +136,7 @@ func (s *Store) GetFlag(ctx context.Context, req *pb.GetFlagRequest) (*pb.GetFla
 
 func (s *Store) ListFlags(ctx context.Context, req *pb.ListFlagsRequest) (*pb.ListFlagsResponse, error) {
 	tid := req.GetTenant().GetTenantId()
-	page, perPage := paginate(req.GetPagination())
+	page, perPage := pagination.Parse(req.GetPagination())
 
 	var total int32
 	err := s.db.QueryRowContext(ctx,
@@ -203,7 +171,7 @@ func (s *Store) ListFlags(ctx context.Context, req *pb.ListFlagsRequest) (*pb.Li
 
 	return &pb.ListFlagsResponse{
 		Flags:      flags,
-		Pagination: pageInfo(page, perPage, total),
+		Pagination: pagination.Info(page, perPage, total),
 	}, nil
 }
 
@@ -341,7 +309,7 @@ func (s *Store) GetExperiment(ctx context.Context, req *pb.GetExperimentRequest)
 
 func (s *Store) ListExperiments(ctx context.Context, req *pb.ListExperimentsRequest) (*pb.ListExperimentsResponse, error) {
 	tid := req.GetTenant().GetTenantId()
-	page, perPage := paginate(req.GetPagination())
+	page, perPage := pagination.Parse(req.GetPagination())
 
 	var total int32
 	err := s.db.QueryRowContext(ctx,
@@ -376,7 +344,7 @@ func (s *Store) ListExperiments(ctx context.Context, req *pb.ListExperimentsRequ
 
 	return &pb.ListExperimentsResponse{
 		Experiments: experiments,
-		Pagination:  pageInfo(page, perPage, total),
+		Pagination:  pagination.Info(page, perPage, total),
 	}, nil
 }
 
@@ -458,7 +426,7 @@ func (s *Store) GetAPIKeyByHash(ctx context.Context, req *pb.GetAPIKeyByHashRequ
 
 func (s *Store) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.ListAPIKeysResponse, error) {
 	tid := req.GetTenant().GetTenantId()
-	page, perPage := paginate(req.GetPagination())
+	page, perPage := pagination.Parse(req.GetPagination())
 
 	var total int32
 	err := s.db.QueryRowContext(ctx,
@@ -493,7 +461,7 @@ func (s *Store) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*p
 
 	return &pb.ListAPIKeysResponse{
 		ApiKeys:    keys,
-		Pagination: pageInfo(page, perPage, total),
+		Pagination: pagination.Info(page, perPage, total),
 	}, nil
 }
 

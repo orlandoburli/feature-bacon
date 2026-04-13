@@ -16,6 +16,7 @@ import (
 
 	"github.com/orlandoburli/feature-bacon/internal/conformance"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/migrations"
+	"github.com/orlandoburli/feature-bacon/modules/postgres/store"
 )
 
 func TestPersistenceConformance(t *testing.T) {
@@ -56,5 +57,6 @@ func TestPersistenceConformance(t *testing.T) {
 		t.Fatalf("goose.Up: %v", err)
 	}
 
-	conformance.RunPersistenceSuite(t, db)
+	st := store.New(db)
+	conformance.RunPersistenceSuite(t, st)
 }

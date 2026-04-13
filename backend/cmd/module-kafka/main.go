@@ -40,19 +40,13 @@ func main() {
 
 	srv := server.New(producer, topic)
 
-	grpcServer, err := moduleutil.NewGRPCServer(func(s *grpc.Server) {
-		pb.RegisterPublisherServiceServer(s, srv)
-	})
-	if err != nil {
-		slog.Error("failed to create gRPC server", "error", err)
-		os.Exit(1)
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	if err := moduleutil.ListenAndServe(ctx, grpcServer, addr); err != nil {
-		slog.Error("failed to listen", "error", err, "addr", addr)
+	if err := moduleutil.ServeModule(ctx, addr, func(s *grpc.Server) {
+		pb.RegisterPublisherServiceServer(s, srv)
+	}); err != nil {
+		slog.Error("module failed", "error", err)
 		os.Exit(1)
 	}
 }

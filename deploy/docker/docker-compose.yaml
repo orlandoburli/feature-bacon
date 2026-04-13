@@ -54,6 +54,27 @@ services:
       kafka:
         condition: service_healthy
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  module-redis:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.module-redis
+    environment:
+      MODULE_REDIS_ADDR: "redis:6379"
+      MODULE_GRPC_ADDR: ":50051"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   bacon-core:
     build:
       context: ../../
