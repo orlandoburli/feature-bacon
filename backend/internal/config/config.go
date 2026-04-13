@@ -19,6 +19,7 @@ type Config struct {
 	JWTScopeClaim  string
 
 	PersistenceAddr string // gRPC address for persistence module
+	PublisherAddrs  string // comma-separated gRPC addresses for publisher modules
 	TLSCA           string
 	TLSCert         string
 	TLSKey          string
@@ -42,6 +43,7 @@ func Load() Config {
 		JWTScopeClaim:  os.Getenv("BACON_JWT_SCOPE_CLAIM"),
 
 		PersistenceAddr: os.Getenv("BACON_PERSISTENCE_ADDR"),
+		PublisherAddrs:  os.Getenv("BACON_PUBLISHER_ADDRS"),
 		TLSCA:           os.Getenv("BACON_TLS_CA"),
 		TLSCert:         os.Getenv("BACON_TLS_CERT"),
 		TLSKey:          os.Getenv("BACON_TLS_KEY"),

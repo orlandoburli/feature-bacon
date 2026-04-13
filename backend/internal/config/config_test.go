@@ -63,6 +63,7 @@ func TestLoadFromEnv(t *testing.T) {
 		"BACON_JWT_JWKS_URL":     "https://auth.test.com/.well-known/jwks.json",
 		"BACON_JWT_TENANT_CLAIM": "org_id",
 		"BACON_JWT_SCOPE_CLAIM":  "scope",
+		"BACON_PUBLISHER_ADDRS":  "localhost:9091,localhost:9092",
 	}
 
 	for k, v := range envs {
@@ -88,6 +89,7 @@ func TestLoadFromEnv(t *testing.T) {
 		{"JWTJWKSURL", cfg.JWTJWKSURL, "https://auth.test.com/.well-known/jwks.json"},
 		{"JWTTenantClaim", cfg.JWTTenantClaim, "org_id"},
 		{"JWTScopeClaim", cfg.JWTScopeClaim, "scope"},
+		{"PublisherAddrs", cfg.PublisherAddrs, "localhost:9091,localhost:9092"},
 	}
 
 	for _, c := range checks {
