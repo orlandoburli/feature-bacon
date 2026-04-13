@@ -1,5 +1,10 @@
 # Feature Bacon 🐷🥓
 
+[![CI](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci.yaml/badge.svg)](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci.yaml)
+[![CI - SDKs & Samples](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci-sdks.yaml/badge.svg)](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci-sdks.yaml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend)
+
 A **multi-tenant feature-flag and experimentation platform** built with Go and React/Next.js. Evaluate flags for web, backend, and mobile applications using rich context (JWT claims, headers, IP, session data, custom attributes), run A/B tests with stable variant assignment, and emit events to the systems you already use — all from one API.
 
 Deploy it as a **standalone SaaS** serving many tenants or as a lightweight **sidecar** for a single application. Same codebase, different config.
@@ -150,6 +155,35 @@ Full product and technical specs live in `[openspec/](openspec/)` following the 
 | Observability   | [observability/spec.md](openspec/specs/observability/spec.md) |
 | Architecture    | [architecture/spec.md](openspec/specs/architecture/spec.md)   |
 
+
+## Code Quality
+
+All components are analyzed by [SonarCloud](https://sonarcloud.io/organizations/orlandoburli/projects).
+
+### Backend
+
+| Quality Gate | Coverage | Security | Maintainability | Reliability |
+|:---:|:---:|:---:|:---:|:---:|
+| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) |
+
+| Bugs | Vulnerabilities | Code Smells | Duplicated Lines |
+|:---:|:---:|:---:|:---:|
+| [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=bugs)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) | [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-backend&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-backend) |
+
+### SDKs
+
+| SDK | Quality Gate | Coverage | Security | Maintainability | Reliability |
+|-----|:---:|:---:|:---:|:---:|:---:|
+| **Go** | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-go&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-go) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-go&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-go) | [![Security](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-go&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-go) | [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-go&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-go) | [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-go&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-go) |
+| **JavaScript** | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-js&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-js) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-js&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-js) | [![Security](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-js&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-js) | [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-js&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-js) | [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-js&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-js) |
+| **Python** | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-python&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-python) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-python&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-python) | [![Security](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-python&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-python) | [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-python&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-python) | [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-python&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-python) |
+| **Java** | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-java&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-java) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-java&metric=coverage)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-java) | [![Security](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-java&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-java) | [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-java&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-java) | [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-sdk-java&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-sdk-java) |
+
+### Samples
+
+| Quality Gate | Security | Maintainability | Reliability |
+|:---:|:---:|:---:|:---:|
+| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-samples&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-samples) | [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-samples&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-samples) | [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-samples&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-samples) | [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=orlandoburli_feature-bacon-samples&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=orlandoburli_feature-bacon-samples) |
 
 ## Status
 
