@@ -25,7 +25,7 @@ openssl req -new -key "$DIR/server.key" -out "$DIR/server.csr" \
   -subj "$SUBJ_SRV" 2>/dev/null
 openssl x509 -req -in "$DIR/server.csr" -CA "$DIR/ca.pem" -CAkey "$DIR/ca.key" \
   -CAcreateserial -out "$DIR/server.pem" -days "$DAYS" \
-  -extfile <(printf "subjectAltName=DNS:localhost,DNS:module-postgres,DNS:module-kafka,DNS:module-redis,DNS:module-mongodb") 2>/dev/null
+  -extfile <(printf "subjectAltName=DNS:localhost,DNS:module-postgres,DNS:module-kafka,DNS:module-redis,DNS:module-mongodb,DNS:module-sqs,DNS:module-gcppubsub,DNS:module-grpcpub") 2>/dev/null
 
 echo "==> Generating client cert (core)"
 openssl ecparam -genkey -name prime256v1 -out "$DIR/client.key" 2>/dev/null

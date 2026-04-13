@@ -1,0 +1,25 @@
+ARG VERSION=dev
+
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /src
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ .
+
+RUN go build -ldflags="-s -w" -o /module-grpcpub ./cmd/module-grpcpub
+
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates && \
+    adduser -D -h /home/bacon bacon
+
+COPY --from=builder /module-grpcpub /module-grpcpub
+
+USER bacon
+
+EXPOSE 50052
+
+ENTRYPOINT ["/module-grpcpub"]
