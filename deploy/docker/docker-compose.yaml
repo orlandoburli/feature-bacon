@@ -75,6 +75,28 @@ services:
       redis:
         condition: service_healthy
 
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  module-mongodb:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.module-mongodb
+    environment:
+      MODULE_MONGO_URI: "mongodb://mongodb:27017"
+      MODULE_MONGO_DB: "feature_bacon"
+      MODULE_GRPC_ADDR: ":50051"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
   bacon-core:
     build:
       context: ../../
