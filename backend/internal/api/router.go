@@ -11,13 +11,14 @@ import (
 
 // RouterConfig holds dependencies for building the HTTP router.
 type RouterConfig struct {
-	Engine       *engine.Engine
-	AuthDisabled bool
-	KeyStore     auth.KeyFinder
-	JWTValidator *auth.JWTValidator
-	JWTEnabled   bool
-	ReadOnly     bool
-	FlagManager  handlers.FlagManager
+	Engine            *engine.Engine
+	AuthDisabled      bool
+	KeyStore          auth.KeyFinder
+	JWTValidator      *auth.JWTValidator
+	JWTEnabled        bool
+	ReadOnly          bool
+	FlagManager       handlers.FlagManager
+	ExperimentManager handlers.ExperimentManager
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
@@ -46,6 +47,20 @@ func NewRouter(cfg RouterConfig) http.Handler {
 
 		apiMux.Handle("/api/v1/flags", readOnlyMW(mgmtMux))
 		apiMux.Handle("/api/v1/flags/", readOnlyMW(mgmtMux))
+	}
+
+	if cfg.ExperimentManager != nil {
+		expMux := http.NewServeMux()
+		expMux.Handle("GET /api/v1/experiments", mgmtChain(handlers.HandleListExperiments(cfg.ExperimentManager)))
+		expMux.Handle("GET /api/v1/experiments/{experimentKey}", mgmtChain(handlers.HandleGetExperiment(cfg.ExperimentManager)))
+		expMux.Handle("POST /api/v1/experiments", mgmtChain(handlers.HandleCreateExperiment(cfg.ExperimentManager)))
+		expMux.Handle("PUT /api/v1/experiments/{experimentKey}", mgmtChain(handlers.HandleUpdateExperiment(cfg.ExperimentManager)))
+		expMux.Handle("POST /api/v1/experiments/{experimentKey}/start", mgmtChain(handlers.HandleStartExperiment(cfg.ExperimentManager)))
+		expMux.Handle("POST /api/v1/experiments/{experimentKey}/pause", mgmtChain(handlers.HandlePauseExperiment(cfg.ExperimentManager)))
+		expMux.Handle("POST /api/v1/experiments/{experimentKey}/complete", mgmtChain(handlers.HandleCompleteExperiment(cfg.ExperimentManager)))
+
+		apiMux.Handle("/api/v1/experiments", readOnlyMW(expMux))
+		apiMux.Handle("/api/v1/experiments/", readOnlyMW(expMux))
 	}
 
 	var protectedAPI http.Handler = apiMux

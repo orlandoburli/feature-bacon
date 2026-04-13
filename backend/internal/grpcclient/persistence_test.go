@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	fmtUnexpectedErr  = "unexpected error: %v"
-	fmtExpectedKeyGot = "expected key %s, got %s"
-	tenantDefault     = "_default"
-	flagDarkMode      = "dark-mode"
-	subjectUser1      = "user-1"
+	fmtUnexpectedErr        = "unexpected error: %v"
+	fmtExpectedKeyGot       = "expected key %s, got %s"
+	tenantDefault           = "_default"
+	flagDarkMode            = "dark-mode"
+	subjectUser1            = "user-1"
+	experimentKeyOnboarding = "onboarding"
 )
 
 type mockPersistenceServer struct {
@@ -77,6 +78,48 @@ func (m *mockPersistenceServer) UpdateFlag(_ context.Context, req *pb.UpdateFlag
 
 func (m *mockPersistenceServer) DeleteFlag(_ context.Context, _ *pb.DeleteFlagRequest) (*pb.DeleteFlagResponse, error) {
 	return &pb.DeleteFlagResponse{}, nil
+}
+
+func (m *mockPersistenceServer) GetExperiment(_ context.Context, req *pb.GetExperimentRequest) (*pb.GetExperimentResponse, error) {
+	if req.ExperimentKey == experimentKeyOnboarding {
+		return &pb.GetExperimentResponse{
+			Experiment: &pb.Experiment{
+				Key:              experimentKeyOnboarding,
+				Name:             "Onboarding Flow",
+				Status:           "draft",
+				StickyAssignment: true,
+				Variants: []*pb.Variant{
+					{Key: "control", Description: "Original"},
+					{Key: "variant-a", Description: "New flow"},
+				},
+				Allocation: []*pb.Allocation{
+					{VariantKey: "control", Percentage: 50},
+					{VariantKey: "variant-a", Percentage: 50},
+				},
+				CreatedAt: 1700000000,
+			},
+		}, nil
+	}
+	return &pb.GetExperimentResponse{}, nil
+}
+
+func (m *mockPersistenceServer) ListExperiments(_ context.Context, _ *pb.ListExperimentsRequest) (*pb.ListExperimentsResponse, error) {
+	return &pb.ListExperimentsResponse{
+		Experiments: []*pb.Experiment{
+			{Key: experimentKeyOnboarding, Name: "Onboarding Flow", Status: "draft"},
+		},
+		Pagination: &pb.PageInfo{Total: 1, Page: 1, PerPage: 20, TotalPages: 1},
+	}, nil
+}
+
+func (m *mockPersistenceServer) CreateExperiment(_ context.Context, req *pb.CreateExperimentRequest) (*pb.CreateExperimentResponse, error) {
+	req.Experiment.CreatedAt = 1700000000
+	return &pb.CreateExperimentResponse{Experiment: req.Experiment}, nil
+}
+
+func (m *mockPersistenceServer) UpdateExperiment(_ context.Context, req *pb.UpdateExperimentRequest) (*pb.UpdateExperimentResponse, error) {
+	req.Experiment.UpdatedAt = 1700000001
+	return &pb.UpdateExperimentResponse{Experiment: req.Experiment}, nil
 }
 
 func (m *mockPersistenceServer) GetAssignment(_ context.Context, req *pb.GetAssignmentRequest) (*pb.GetAssignmentResponse, error) {
@@ -306,6 +349,81 @@ func TestPersistenceClient_DeleteFlagManaged(t *testing.T) {
 	err := client.DeleteFlagManaged(context.Background(), tenantDefault, flagDarkMode)
 	if err != nil {
 		t.Fatalf(fmtUnexpectedErr, err)
+	}
+}
+
+func TestPersistenceClient_GetExperimentManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	exp, err := client.GetExperimentManaged(context.Background(), tenantDefault, experimentKeyOnboarding)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if exp == nil {
+		t.Fatal("expected experiment, got nil")
+	}
+	if exp.Key != experimentKeyOnboarding {
+		t.Errorf(fmtExpectedKeyGot, experimentKeyOnboarding, exp.Key)
+	}
+	if !exp.StickyAssignment {
+		t.Error("expected StickyAssignment = true")
+	}
+}
+
+func TestPersistenceClient_ListExperimentsManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	experiments, total, err := client.ListExperimentsManaged(context.Background(), tenantDefault, 1, 20)
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if len(experiments) != 1 {
+		t.Fatalf("expected 1 experiment, got %d", len(experiments))
+	}
+	if total != 1 {
+		t.Errorf("expected total 1, got %d", total)
+	}
+}
+
+func TestPersistenceClient_CreateExperimentManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	exp, err := client.CreateExperimentManaged(context.Background(), tenantDefault, &pb.Experiment{
+		Key:              experimentKeyOnboarding,
+		Name:             "Onboarding",
+		StickyAssignment: true,
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if exp.Key != experimentKeyOnboarding {
+		t.Errorf(fmtExpectedKeyGot, experimentKeyOnboarding, exp.Key)
+	}
+	if exp.CreatedAt != 1700000000 {
+		t.Errorf("expected CreatedAt 1700000000, got %d", exp.CreatedAt)
+	}
+}
+
+func TestPersistenceClient_UpdateExperimentManaged(t *testing.T) {
+	conn := startMockServer(t)
+	client := NewPersistenceClient(conn)
+
+	exp, err := client.UpdateExperimentManaged(context.Background(), tenantDefault, &pb.Experiment{
+		Key:    experimentKeyOnboarding,
+		Name:   "Updated Onboarding",
+		Status: "running",
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if exp.Key != experimentKeyOnboarding {
+		t.Errorf(fmtExpectedKeyGot, experimentKeyOnboarding, exp.Key)
+	}
+	if exp.UpdatedAt != 1700000001 {
+		t.Errorf("expected UpdatedAt 1700000001, got %d", exp.UpdatedAt)
 	}
 }
 

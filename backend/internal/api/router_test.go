@@ -15,14 +15,16 @@ import (
 )
 
 const (
-	flagKeyTestFlag   = "test-flag"
-	fmtStatusWant     = "status = %d, want %d"
-	headerRequestID   = "X-Request-Id"
-	requestIDCustom42 = "custom-id-42"
-	pathEvalEndpoint  = "/api/v1/evaluate"
-	headerContentType = "Content-Type"
-	contentTypeJSON   = "application/json"
-	pathAPIFlags      = "/api/v1/flags"
+	flagKeyTestFlag    = "test-flag"
+	fmtStatusWant      = "status = %d, want %d"
+	headerRequestID    = "X-Request-Id"
+	requestIDCustom42  = "custom-id-42"
+	pathEvalEndpoint   = "/api/v1/evaluate"
+	headerContentType  = "Content-Type"
+	contentTypeJSON    = "application/json"
+	pathAPIFlags       = "/api/v1/flags"
+	pathAPIExperiments = "/api/v1/experiments"
+	expKeyOnboarding   = "onboarding"
 )
 
 type stubFlagManager struct{}
@@ -50,12 +52,40 @@ func (s *stubFlagManager) DeleteFlag(_ context.Context, _, _ string) error { ret
 
 var _ handlers.FlagManager = (*stubFlagManager)(nil)
 
+type stubExperimentManager struct{}
+
+func (s *stubExperimentManager) GetExperiment(_ context.Context, _, key string) (*pb.Experiment, error) {
+	if key == expKeyOnboarding {
+		return &pb.Experiment{
+			Key: expKeyOnboarding, Name: "Onboarding", Status: "draft",
+			StickyAssignment: true,
+		}, nil
+	}
+	return nil, nil
+}
+
+func (s *stubExperimentManager) ListExperiments(_ context.Context, _ string, _, _ int) ([]*pb.Experiment, int, error) {
+	return []*pb.Experiment{{Key: expKeyOnboarding, Status: "draft"}}, 1, nil
+}
+
+func (s *stubExperimentManager) CreateExperiment(_ context.Context, _ string, e *pb.Experiment) (*pb.Experiment, error) {
+	e.Status = "draft"
+	return e, nil
+}
+
+func (s *stubExperimentManager) UpdateExperiment(_ context.Context, _ string, e *pb.Experiment) (*pb.Experiment, error) {
+	return e, nil
+}
+
+var _ handlers.ExperimentManager = (*stubExperimentManager)(nil)
+
 func testRouter(eng *engine.Engine) http.Handler {
 	return NewRouter(RouterConfig{
-		Engine:       eng,
-		AuthDisabled: true,
-		KeyStore:     auth.NewMemKeyStore(),
-		FlagManager:  &stubFlagManager{},
+		Engine:            eng,
+		AuthDisabled:      true,
+		KeyStore:          auth.NewMemKeyStore(),
+		FlagManager:       &stubFlagManager{},
+		ExperimentManager: &stubExperimentManager{},
 	})
 }
 
@@ -274,6 +304,82 @@ func TestNewRouter_DeleteFlag(t *testing.T) {
 
 	if w.Code != http.StatusNoContent {
 		t.Fatalf(fmtStatusWant, w.Code, http.StatusNoContent)
+	}
+}
+
+func TestNewRouter_ListExperiments(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, pathAPIExperiments, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_GetExperiment(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, pathAPIExperiments+"/"+expKeyOnboarding, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_CreateExperiment(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	body := `{"key":"new-exp","name":"New Experiment"}`
+	req := httptest.NewRequest(http.MethodPost, pathAPIExperiments, bytes.NewBufferString(body))
+	req.Header.Set(headerContentType, contentTypeJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusCreated)
+	}
+}
+
+func TestNewRouter_StartExperiment(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodPost, pathAPIExperiments+"/"+expKeyOnboarding+"/start", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+}
+
+func TestNewRouter_ReadOnlyMode_Experiments(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := NewRouter(RouterConfig{
+		Engine:            eng,
+		AuthDisabled:      true,
+		KeyStore:          auth.NewMemKeyStore(),
+		FlagManager:       &stubFlagManager{},
+		ExperimentManager: &stubExperimentManager{},
+		ReadOnly:          true,
+	})
+
+	body := `{"key":"new-exp","name":"New Experiment"}`
+	req := httptest.NewRequest(http.MethodPost, pathAPIExperiments, bytes.NewBufferString(body))
+	req.Header.Set(headerContentType, contentTypeJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusConflict)
 	}
 }
 
