@@ -13,6 +13,14 @@ import (
 	bacon "github.com/orlandoburli/feature-bacon/sdks/go"
 )
 
+const (
+	contentTypeJSON    = "application/json"
+	headerContentType  = "Content-Type"
+	errUnexpectedPath  = "unexpected path: %s"
+	testAPIKey         = "test-key"
+	errUnexpectedError = "unexpected error: %v"
+)
+
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
@@ -22,7 +30,7 @@ func newTestServer(handler http.HandlerFunc) *httptest.Server {
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(headerContentType, contentTypeJSON)
 	json.NewEncoder(w).Encode(v)
 }
 
@@ -36,18 +44,19 @@ var testCtx = bacon.EvaluationContext{
 // Evaluate
 // ---------------------------------------------------------------------------
 
-func TestEvaluate(t *testing.T) {
-	srv := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+func evaluateHandler(t *testing.T) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
 		if r.URL.Path != "/api/v1/evaluate" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
+			t.Errorf(errUnexpectedPath, r.URL.Path)
 		}
-		if r.Header.Get("X-API-Key") != "test-key" {
+		if r.Header.Get("X-API-Key") != testAPIKey {
 			t.Errorf("missing or wrong API key header")
 		}
-		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+		if ct := r.Header.Get(headerContentType); ct != contentTypeJSON {
 			t.Errorf("expected application/json content-type, got %s", ct)
 		}
 
@@ -72,13 +81,17 @@ func TestEvaluate(t *testing.T) {
 			Variant:  "control",
 			Reason:   "rule_match",
 		})
-	})
+	}
+}
+
+func TestEvaluate(t *testing.T) {
+	srv := newTestServer(evaluateHandler(t))
 	defer srv.Close()
 
-	client := bacon.NewClient(srv.URL, bacon.WithAPIKey("test-key"))
+	client := bacon.NewClient(srv.URL, bacon.WithAPIKey(testAPIKey))
 	result, err := client.Evaluate(context.Background(), "my_flag", testCtx)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(errUnexpectedError, err)
 	}
 	if result.TenantID != "default" {
 		t.Errorf("tenantId = %q, want default", result.TenantID)
@@ -101,7 +114,7 @@ func TestEvaluate(t *testing.T) {
 func TestEvaluateBatch(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/evaluate/batch" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
+			t.Errorf(errUnexpectedPath, r.URL.Path)
 		}
 
 		var req struct {
@@ -124,10 +137,10 @@ func TestEvaluateBatch(t *testing.T) {
 	})
 	defer srv.Close()
 
-	client := bacon.NewClient(srv.URL, bacon.WithAPIKey("test-key"))
+	client := bacon.NewClient(srv.URL, bacon.WithAPIKey(testAPIKey))
 	results, err := client.EvaluateBatch(context.Background(), []string{"flag_a", "flag_b"}, testCtx)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(errUnexpectedError, err)
 	}
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
@@ -199,7 +212,7 @@ func TestGetVariant_ErrorReturnsEmpty(t *testing.T) {
 func TestHealthy(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/healthz" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
+			t.Errorf(errUnexpectedPath, r.URL.Path)
 		}
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
@@ -229,7 +242,7 @@ func TestHealthy_Unhealthy(t *testing.T) {
 func TestReady(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/readyz" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
+			t.Errorf(errUnexpectedPath, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
 	})
@@ -247,7 +260,7 @@ func TestReady(t *testing.T) {
 
 func TestEvaluate_APIError(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{
 			"type":   "https://featurebacon.dev/errors/unauthorized",
@@ -310,7 +323,7 @@ func TestEvaluate_NonJSONError(t *testing.T) {
 
 func TestEvaluate_InvalidJSON(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, contentTypeJSON)
 		io.WriteString(w, `{"broken`)
 	})
 	defer srv.Close()
@@ -375,7 +388,7 @@ func TestWithHTTPClient(t *testing.T) {
 	client := bacon.NewClient(srv.URL, bacon.WithHTTPClient(custom))
 	result, err := client.Evaluate(context.Background(), "f", bacon.EvaluationContext{SubjectID: "u"})
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(errUnexpectedError, err)
 	}
 	if !result.Enabled {
 		t.Error("expected enabled")
@@ -385,7 +398,7 @@ func TestWithHTTPClient(t *testing.T) {
 func TestBaseURLTrailingSlash(t *testing.T) {
 	srv := newTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/healthz" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
+			t.Errorf(errUnexpectedPath, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
 	})

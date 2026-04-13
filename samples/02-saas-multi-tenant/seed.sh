@@ -5,6 +5,7 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 
 ACME_KEY="${ACME_KEY:-ba_mgmt_acme_bootstrap}"
 GLOBEX_KEY="${GLOBEX_KEY:-ba_mgmt_globex_bootstrap}"
+CONTENT_TYPE="Content-Type: application/json"
 
 echo "=== Feature Bacon — Seed Data ==="
 echo ""
@@ -18,7 +19,7 @@ echo ""
 echo "1. Create evaluation API key for acme"
 ACME_EVAL_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/api-keys" \
   -H "Authorization: ApiKey $ACME_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{"name": "acme eval key", "scope": "evaluation"}')
 echo "$ACME_EVAL_RESPONSE" | jq .
 ACME_EVAL_KEY=$(echo "$ACME_EVAL_RESPONSE" | jq -r '.rawKey // empty')
@@ -28,7 +29,7 @@ echo "2. Create flags for acme"
 
 curl -s -X POST "$BASE_URL/api/v1/flags" \
   -H "Authorization: ApiKey $ACME_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "dark_mode",
     "type": "boolean",
@@ -52,7 +53,7 @@ curl -s -X POST "$BASE_URL/api/v1/flags" \
 
 curl -s -X POST "$BASE_URL/api/v1/flags" \
   -H "Authorization: ApiKey $ACME_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "new_checkout",
     "type": "string",
@@ -71,7 +72,7 @@ curl -s -X POST "$BASE_URL/api/v1/flags" \
 
 curl -s -X POST "$BASE_URL/api/v1/flags" \
   -H "Authorization: ApiKey $ACME_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "maintenance_mode",
     "type": "boolean",
@@ -85,7 +86,7 @@ echo ""
 echo "3. Create experiment for acme"
 curl -s -X POST "$BASE_URL/api/v1/experiments" \
   -H "Authorization: ApiKey $ACME_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "onboarding_flow",
     "name": "Onboarding A/B Test",
@@ -117,7 +118,7 @@ echo ""
 echo "5. Create evaluation API key for globex"
 GLOBEX_EVAL_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/api-keys" \
   -H "Authorization: ApiKey $GLOBEX_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{"name": "globex eval key", "scope": "evaluation"}')
 echo "$GLOBEX_EVAL_RESPONSE" | jq .
 GLOBEX_EVAL_KEY=$(echo "$GLOBEX_EVAL_RESPONSE" | jq -r '.rawKey // empty')
@@ -127,7 +128,7 @@ echo "6. Create flags for globex"
 
 curl -s -X POST "$BASE_URL/api/v1/flags" \
   -H "Authorization: ApiKey $GLOBEX_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "dark_mode",
     "type": "boolean",
@@ -145,7 +146,7 @@ curl -s -X POST "$BASE_URL/api/v1/flags" \
 
 curl -s -X POST "$BASE_URL/api/v1/flags" \
   -H "Authorization: ApiKey $GLOBEX_KEY" \
-  -H "Content-Type: application/json" \
+  -H "$CONTENT_TYPE" \
   -d '{
     "key": "beta_search",
     "type": "boolean",

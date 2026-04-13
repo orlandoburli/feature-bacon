@@ -12,8 +12,10 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class ProductService {
+    private static final Logger LOG = Logger.getLogger(ProductService.class.getName());
     private final BaconClient client;
 
     public ProductService(BaconClient client) {
@@ -33,7 +35,7 @@ public class ProductService {
         server.createContext("/products", svc::handleProducts);
         server.createContext("/health", svc::handleHealth);
         server.start();
-        System.out.println("Product service on :" + port);
+        LOG.info("Product service on :" + port);
     }
 
     private void handleHome(HttpExchange ex) throws IOException {

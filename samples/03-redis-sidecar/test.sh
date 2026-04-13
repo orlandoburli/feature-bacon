@@ -2,6 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
+VARIANT_PATH=".variant"
 
 echo "=== Feature Bacon — Redis Sidecar ==="
 echo ""
@@ -24,7 +25,7 @@ for i in $(seq 1 5); do
   RESULT=$(curl -s "$BASE_URL/api/v1/evaluate" -d '{
     "flagKey": "onboarding_variant",
     "context": {"subjectId": "user_sticky_1"}
-  }' | jq -r '.variant')
+  }' | jq -r "$VARIANT_PATH")
   echo "  call $i: variant=$RESULT"
 done
 echo ""
@@ -34,7 +35,7 @@ for i in $(seq 1 8); do
   RESULT=$(curl -s "$BASE_URL/api/v1/evaluate" -d "{
     \"flagKey\": \"onboarding_variant\",
     \"context\": {\"subjectId\": \"user_$i\"}
-  }" | jq -r '.variant')
+  }" | jq -r "$VARIANT_PATH")
   echo "  user_$i: $RESULT"
 done
 echo ""
@@ -45,7 +46,7 @@ for i in $(seq 1 8); do
   RESULT=$(curl -s "$BASE_URL/api/v1/evaluate" -d "{
     \"flagKey\": \"onboarding_variant\",
     \"context\": {\"subjectId\": \"user_$i\"}
-  }" | jq -r '.variant')
+  }" | jq -r "$VARIANT_PATH")
   echo "  user_$i: $RESULT"
 done
 echo ""
@@ -78,7 +79,7 @@ for i in $(seq 1 9); do
   RESULT=$(curl -s "$BASE_URL/api/v1/evaluate" -d "{
     \"flagKey\": \"search_algorithm\",
     \"context\": {\"subjectId\": \"user_$i\"}
-  }" | jq -r '.variant')
+  }" | jq -r "$VARIANT_PATH")
   echo "  user_$i: $RESULT"
 done
 echo ""

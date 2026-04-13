@@ -13,6 +13,7 @@ import (
 const (
 	fmtUnexpected = "unexpected error: %v"
 	emptyJSON     = "{}"
+	msgTargetDown = "target down"
 )
 
 var errMock = errors.New("mock error")
@@ -74,14 +75,14 @@ func TestHealthy_OK(t *testing.T) {
 
 func TestHealthy_Unhealthy(t *testing.T) {
 	sender := newTestSender(&mockPubClient{
-		healthResp: &pb.HealthCheckResponse{Healthy: false, Message: "target down"},
+		healthResp: &pb.HealthCheckResponse{Healthy: false, Message: msgTargetDown},
 	})
 	ok, msg := sender.Healthy(context.Background())
 	if ok {
 		t.Error("expected healthy = false")
 	}
-	if msg != "target down" {
-		t.Errorf("message = %q, want %q", msg, "target down")
+	if msg != msgTargetDown {
+		t.Errorf("message = %q, want %q", msg, msgTargetDown)
 	}
 }
 

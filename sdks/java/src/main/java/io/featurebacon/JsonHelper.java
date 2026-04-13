@@ -263,7 +263,9 @@ final class JsonHelper {
             int start = pos;
             if (peek() == '-') pos++;
             consumeDigits();
-            boolean isFloat = consumeFraction() | consumeExponent();
+            boolean hasFraction = consumeFraction();
+            boolean hasExponent = consumeExponent();
+            boolean isFloat = hasFraction || hasExponent;
             String numStr = src.substring(start, pos);
             if (isFloat) return Double.parseDouble(numStr);
             long l = Long.parseLong(numStr);

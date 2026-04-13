@@ -9,6 +9,11 @@ import (
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
 )
 
+const (
+	fmtExpectedNilErr = "expected nil error, got %v"
+	fmtUnexpectedErr  = "unexpected error: %v"
+)
+
 var errPublish = errors.New("publish failed")
 
 type spyPublisher struct {
@@ -39,7 +44,7 @@ func sampleEvent() *pb.Event {
 func TestFanout_ZeroPublishers(t *testing.T) {
 	f := NewFanout()
 	if err := f.Publish(context.Background(), sampleEvent()); err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+		t.Fatalf(fmtExpectedNilErr, err)
 	}
 }
 
@@ -48,7 +53,7 @@ func TestFanout_SinglePublisher(t *testing.T) {
 	f := NewFanout(spy)
 
 	if err := f.Publish(context.Background(), sampleEvent()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedErr, err)
 	}
 	if spy.calls.Load() != 1 {
 		t.Errorf("calls = %d, want 1", spy.calls.Load())
@@ -64,7 +69,7 @@ func TestFanout_MultiplePublishers(t *testing.T) {
 	f := NewFanout(pubs...)
 
 	if err := f.Publish(context.Background(), sampleEvent()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedErr, err)
 	}
 	for i, s := range spies {
 		if s.calls.Load() != 1 {
@@ -98,7 +103,7 @@ func TestFanout_Close(t *testing.T) {
 	f := NewFanout(spies[0], spies[1])
 
 	if err := f.Close(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedErr, err)
 	}
 	for i, s := range spies {
 		if !s.closed.Load() {
@@ -123,13 +128,13 @@ func TestFanout_Close_WithError(t *testing.T) {
 func TestFanout_Close_ZeroPublishers(t *testing.T) {
 	f := NewFanout()
 	if err := f.Close(); err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+		t.Fatalf(fmtExpectedNilErr, err)
 	}
 }
 
 func TestFanout_NilSlice(t *testing.T) {
 	f := &Fanout{publishers: nil}
 	if err := f.Publish(context.Background(), sampleEvent()); err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+		t.Fatalf(fmtExpectedNilErr, err)
 	}
 }

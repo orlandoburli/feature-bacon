@@ -10,7 +10,10 @@ import (
 	"github.com/orlandoburli/feature-bacon/internal/tlsutil"
 )
 
-const fmtUnexpectedErr = "unexpected error: %v"
+const (
+	fmtUnexpectedErr = "unexpected error: %v"
+	pathNonexistent  = "/nonexistent"
+)
 
 func TestEnvOrDefault_Fallback(t *testing.T) {
 	v := EnvOrDefault("BACON_TEST_NONEXISTENT_KEY_1234", "fallback")
@@ -57,9 +60,9 @@ func TestServerOptions_Disabled(t *testing.T) {
 
 func TestServerOptions_InvalidCert(t *testing.T) {
 	cfg := tlsutil.Config{
-		CAFile:   "/nonexistent",
-		CertFile: "/nonexistent",
-		KeyFile:  "/nonexistent",
+		CAFile:   pathNonexistent,
+		CertFile: pathNonexistent,
+		KeyFile:  pathNonexistent,
 	}
 	_, err := ServerOptions(cfg)
 	if err == nil {

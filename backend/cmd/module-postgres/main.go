@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx as database/sql driver
 	"github.com/pressly/goose/v3"
 	"google.golang.org/grpc"
 

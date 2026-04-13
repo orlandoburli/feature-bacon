@@ -77,7 +77,7 @@ for i in $(seq 1 $TOTAL); do
     \"flagKey\": \"new_pricing\",
     \"context\": {\"subjectId\": \"visitor_$i\", \"environment\": \"production\"}
   }" | jq -r '.enabled')
-  if [ "$RESULT" = "true" ]; then
+  if [[ "$RESULT" = "true" ]]; then
     ENABLED_COUNT=$((ENABLED_COUNT + 1))
   fi
 done

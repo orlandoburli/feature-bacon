@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+const fmtUnmarshalLog = "unmarshal log: %v"
+
 func TestRequestLogger_LogsFields(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&buf, nil))
@@ -24,7 +26,7 @@ func TestRequestLogger_LogsFields(t *testing.T) {
 
 	var entry map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
-		t.Fatalf("unmarshal log: %v", err)
+		t.Fatalf(fmtUnmarshalLog, err)
 	}
 
 	if entry["method"] != "GET" {
@@ -57,7 +59,7 @@ func TestRequestLogger_IncludesCorrelationID(t *testing.T) {
 
 	var entry map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
-		t.Fatalf("unmarshal log: %v", err)
+		t.Fatalf(fmtUnmarshalLog, err)
 	}
 
 	if entry["correlation_id"] != "test-corr-123" {
@@ -80,7 +82,7 @@ func TestRequestLogger_CapturesNon200Status(t *testing.T) {
 
 	var entry map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
-		t.Fatalf("unmarshal log: %v", err)
+		t.Fatalf(fmtUnmarshalLog, err)
 	}
 	if entry["status"] != float64(400) {
 		t.Errorf("status = %v, want 400", entry["status"])

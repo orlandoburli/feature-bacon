@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	fmtUnexpected = "unexpected error: %v"
-	emptyJSON     = "{}"
+	fmtUnexpected     = "unexpected error: %v"
+	emptyJSON         = "{}"
+	msgConnectionLost = "connection lost"
 )
 
 var errMock = errors.New("mock error")
@@ -148,7 +149,7 @@ func TestHealthCheck_Healthy(t *testing.T) {
 }
 
 func TestHealthCheck_Unhealthy(t *testing.T) {
-	ms := &mockSender{healthy: false, healthMsg: "connection lost"}
+	ms := &mockSender{healthy: false, healthMsg: msgConnectionLost}
 	srv := New(ms)
 	resp, err := srv.HealthCheck(context.Background(), &pb.HealthCheckRequest{})
 	if err != nil {
@@ -157,8 +158,8 @@ func TestHealthCheck_Unhealthy(t *testing.T) {
 	if resp.Healthy {
 		t.Error("expected healthy = false")
 	}
-	if resp.Message != "connection lost" {
-		t.Errorf("message = %q, want %q", resp.Message, "connection lost")
+	if resp.Message != msgConnectionLost {
+		t.Errorf("message = %q, want %q", resp.Message, msgConnectionLost)
 	}
 }
 

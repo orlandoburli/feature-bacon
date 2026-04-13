@@ -15,11 +15,13 @@ import (
 const (
 	fmtUnexpectedErr        = "unexpected error: %v"
 	fmtExpectedKeyGot       = "expected key %s, got %s"
+	fmtExpectedCreatedAt    = "expected CreatedAt 1700000000, got %d"
 	tenantDefault           = "_default"
 	flagDarkMode            = "dark-mode"
 	subjectUser1            = "user-1"
 	experimentKeyOnboarding = "onboarding"
 	apiKeyIDTest            = "ak-1"
+	nameTestKey             = "test-key"
 )
 
 type mockPersistenceServer struct {
@@ -151,7 +153,7 @@ func (m *mockPersistenceServer) GetAPIKeyByHash(_ context.Context, req *pb.GetAP
 				KeyHash:   "known-hash",
 				KeyPrefix: "ba_eval_",
 				Scope:     "evaluation",
-				Name:      "test-key",
+				Name:      nameTestKey,
 				CreatedAt: 1700000000,
 			},
 			TenantId: tenantDefault,
@@ -163,7 +165,7 @@ func (m *mockPersistenceServer) GetAPIKeyByHash(_ context.Context, req *pb.GetAP
 func (m *mockPersistenceServer) ListAPIKeys(_ context.Context, _ *pb.ListAPIKeysRequest) (*pb.ListAPIKeysResponse, error) {
 	return &pb.ListAPIKeysResponse{
 		ApiKeys: []*pb.APIKey{
-			{Id: apiKeyIDTest, KeyPrefix: "ba_eval_", Scope: "evaluation", Name: "test-key", CreatedAt: 1700000000},
+			{Id: apiKeyIDTest, KeyPrefix: "ba_eval_", Scope: "evaluation", Name: nameTestKey, CreatedAt: 1700000000},
 		},
 		Pagination: &pb.PageInfo{Total: 1, Page: 1, PerPage: 20, TotalPages: 1},
 	}, nil
@@ -355,7 +357,7 @@ func TestPersistenceClient_CreateFlagManaged(t *testing.T) {
 		t.Errorf(fmtExpectedKeyGot, flagDarkMode, flag.Key)
 	}
 	if flag.CreatedAt != 1700000000 {
-		t.Errorf("expected CreatedAt 1700000000, got %d", flag.CreatedAt)
+		t.Errorf(fmtExpectedCreatedAt, flag.CreatedAt)
 	}
 }
 
@@ -441,7 +443,7 @@ func TestPersistenceClient_CreateExperimentManaged(t *testing.T) {
 		t.Errorf(fmtExpectedKeyGot, experimentKeyOnboarding, exp.Key)
 	}
 	if exp.CreatedAt != 1700000000 {
-		t.Errorf("expected CreatedAt 1700000000, got %d", exp.CreatedAt)
+		t.Errorf(fmtExpectedCreatedAt, exp.CreatedAt)
 	}
 }
 
@@ -489,7 +491,7 @@ func TestPersistenceClient_CreateAPIKeyManaged(t *testing.T) {
 		KeyHash:   "abc123",
 		KeyPrefix: "ba_eval_",
 		Scope:     "evaluation",
-		Name:      "test-key",
+		Name:      nameTestKey,
 	})
 	if err != nil {
 		t.Fatalf(fmtUnexpectedErr, err)
@@ -498,7 +500,7 @@ func TestPersistenceClient_CreateAPIKeyManaged(t *testing.T) {
 		t.Errorf(fmtExpectedKeyGot, apiKeyIDTest, key.Id)
 	}
 	if key.CreatedAt != 1700000000 {
-		t.Errorf("expected CreatedAt 1700000000, got %d", key.CreatedAt)
+		t.Errorf(fmtExpectedCreatedAt, key.CreatedAt)
 	}
 }
 

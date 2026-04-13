@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const eventFlagCreated = "flag.created"
+
 type mockPublisherServer struct {
 	pb.UnimplementedPublisherServiceServer
 	lastEvent *pb.Event
@@ -53,7 +55,7 @@ func TestPublisherClient_Publish(t *testing.T) {
 
 	event := &pb.Event{
 		EventId:     "evt-1",
-		EventType:   "flag.created",
+		EventType:   eventFlagCreated,
 		TenantId:    "tenant-1",
 		Timestamp:   1700000000,
 		PayloadJson: `{"key":"dark-mode"}`,
@@ -68,8 +70,8 @@ func TestPublisherClient_Publish(t *testing.T) {
 	if mock.lastEvent.EventId != "evt-1" {
 		t.Errorf("EventId = %q, want %q", mock.lastEvent.EventId, "evt-1")
 	}
-	if mock.lastEvent.EventType != "flag.created" {
-		t.Errorf("EventType = %q, want %q", mock.lastEvent.EventType, "flag.created")
+	if mock.lastEvent.EventType != eventFlagCreated {
+		t.Errorf("EventType = %q, want %q", mock.lastEvent.EventType, eventFlagCreated)
 	}
 }
 

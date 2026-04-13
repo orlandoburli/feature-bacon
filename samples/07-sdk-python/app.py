@@ -61,4 +61,5 @@ def health():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "3000"))
-    app.run(host="0.0.0.0", port=port)
+    host = os.environ.get("HOST", "0.0.0.0")  # NOSONAR - runs inside Docker container
+    app.run(host=host, port=port)
