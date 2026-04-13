@@ -2,10 +2,10 @@ import { EvaluationContext, EvaluationResult, BatchResult, ClientOptions, Health
 import { BaconError } from './errors';
 
 export class BaconClient {
-  private baseURL: string;
-  private apiKey?: string;
-  private timeout: number;
-  private fetchFn: typeof fetch;
+  private readonly baseURL: string;
+  private readonly apiKey?: string;
+  private readonly timeout: number;
+  private readonly fetchFn: typeof fetch;
 
   constructor(baseURL: string, options: ClientOptions = {}) {
     this.baseURL = baseURL.replace(/\/$/, '');
