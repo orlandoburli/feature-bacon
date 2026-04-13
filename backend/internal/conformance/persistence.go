@@ -14,6 +14,20 @@ const (
 	flagSemanticsFlag     = "flag"
 	experimentStatusDraft = "draft"
 	apiKeyScopeEval       = "read:eval"
+	flagKeyMyFlag         = "my-flag"
+	descTestFlag          = "a test flag"
+	fmtCreateFlag         = "CreateFlag: %v"
+	msgCreatedAtSet       = "created_at should be set"
+	fmtPage1Count2        = "page 1 count = %d, want 2"
+	fmtTotalWant3         = "total = %d, want 3"
+	fmtPage2Count1        = "page 2 count = %d, want 1"
+	flagKeyDelFlag        = "del-flag"
+	subjectUser1          = "user-1"
+	flagKeyFeatureX       = "feature-x"
+	fmtGetAssignment      = "GetAssignment: %v"
+	nameExperimentOne     = "Experiment One"
+	suffixKey1            = "-key-1"
+	fmtGetAPIKeyByHash    = "GetAPIKeyByHash: %v"
 )
 
 func ts(id string) *pb.TenantScope {
@@ -45,21 +59,21 @@ func testFlagCreateAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 	createResp, err := srv.CreateFlag(ctx, &pb.CreateFlagRequest{
 		Tenant: ts(tid),
 		Flag: &pb.FlagDefinition{
-			Key:         "my-flag",
+			Key:         flagKeyMyFlag,
 			Type:        flagTypeBoolean,
 			Semantics:   flagSemanticsFlag,
 			Enabled:     true,
-			Description: "a test flag",
+			Description: descTestFlag,
 			CreatedBy:   "tester",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CreateFlag: %v", err)
+		t.Fatalf(fmtCreateFlag, err)
 	}
 
 	f := createResp.GetFlag()
-	if f.GetKey() != "my-flag" {
-		t.Errorf("key = %q, want %q", f.GetKey(), "my-flag")
+	if f.GetKey() != flagKeyMyFlag {
+		t.Errorf("key = %q, want %q", f.GetKey(), flagKeyMyFlag)
 	}
 	if f.GetType() != flagTypeBoolean {
 		t.Errorf("type = %q, want %q", f.GetType(), flagTypeBoolean)
@@ -70,19 +84,19 @@ func testFlagCreateAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 	if !f.GetEnabled() {
 		t.Error("enabled = false, want true")
 	}
-	if f.GetDescription() != "a test flag" {
-		t.Errorf("description = %q, want %q", f.GetDescription(), "a test flag")
+	if f.GetDescription() != descTestFlag {
+		t.Errorf("description = %q, want %q", f.GetDescription(), descTestFlag)
 	}
 	if f.GetCreatedBy() != "tester" {
 		t.Errorf("created_by = %q, want %q", f.GetCreatedBy(), "tester")
 	}
 	if f.GetCreatedAt() == 0 {
-		t.Error("created_at should be set")
+		t.Error(msgCreatedAtSet)
 	}
 
 	getResp, err := srv.GetFlag(ctx, &pb.GetFlagRequest{
 		Tenant:  ts(tid),
-		FlagKey: "my-flag",
+		FlagKey: flagKeyMyFlag,
 	})
 	if err != nil {
 		t.Fatalf("GetFlag: %v", err)
@@ -125,10 +139,10 @@ func testFlagListPagination(t *testing.T, srv pb.PersistenceServiceServer) {
 		t.Fatalf("ListFlags page 1: %v", err)
 	}
 	if len(resp1.GetFlags()) != 2 {
-		t.Errorf("page 1 count = %d, want 2", len(resp1.GetFlags()))
+		t.Errorf(fmtPage1Count2, len(resp1.GetFlags()))
 	}
 	if resp1.GetPagination().GetTotal() != 3 {
-		t.Errorf("total = %d, want 3", resp1.GetPagination().GetTotal())
+		t.Errorf(fmtTotalWant3, resp1.GetPagination().GetTotal())
 	}
 
 	resp2, err := srv.ListFlags(ctx, &pb.ListFlagsRequest{
@@ -139,7 +153,7 @@ func testFlagListPagination(t *testing.T, srv pb.PersistenceServiceServer) {
 		t.Fatalf("ListFlags page 2: %v", err)
 	}
 	if len(resp2.GetFlags()) != 1 {
-		t.Errorf("page 2 count = %d, want 1", len(resp2.GetFlags()))
+		t.Errorf(fmtPage2Count1, len(resp2.GetFlags()))
 	}
 }
 
@@ -157,7 +171,7 @@ func testFlagUpdate(t *testing.T, srv pb.PersistenceServiceServer) {
 		},
 	})
 	if err != nil {
-		t.Fatalf("CreateFlag: %v", err)
+		t.Fatalf(fmtCreateFlag, err)
 	}
 
 	updResp, err := srv.UpdateFlag(ctx, &pb.UpdateFlagRequest{
@@ -192,19 +206,19 @@ func testFlagDelete(t *testing.T, srv pb.PersistenceServiceServer) {
 	_, err := srv.CreateFlag(ctx, &pb.CreateFlagRequest{
 		Tenant: ts(tid),
 		Flag: &pb.FlagDefinition{
-			Key:       "del-flag",
+			Key:       flagKeyDelFlag,
 			Type:      flagTypeBoolean,
 			Semantics: flagSemanticsFlag,
 			Enabled:   true,
 		},
 	})
 	if err != nil {
-		t.Fatalf("CreateFlag: %v", err)
+		t.Fatalf(fmtCreateFlag, err)
 	}
 
 	_, err = srv.DeleteFlag(ctx, &pb.DeleteFlagRequest{
 		Tenant:  ts(tid),
-		FlagKey: "del-flag",
+		FlagKey: flagKeyDelFlag,
 	})
 	if err != nil {
 		t.Fatalf("DeleteFlag: %v", err)
@@ -212,7 +226,7 @@ func testFlagDelete(t *testing.T, srv pb.PersistenceServiceServer) {
 
 	getResp, err := srv.GetFlag(ctx, &pb.GetFlagRequest{
 		Tenant:  ts(tid),
-		FlagKey: "del-flag",
+		FlagKey: flagKeyDelFlag,
 	})
 	if err != nil {
 		t.Fatalf("GetFlag after delete: %v", err)
@@ -278,8 +292,8 @@ func testAssignmentSaveAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 	_, err := srv.SaveAssignment(ctx, &pb.SaveAssignmentRequest{
 		Tenant: ts(tid),
 		Assignment: &pb.Assignment{
-			SubjectId: "user-1",
-			FlagKey:   "feature-x",
+			SubjectId: subjectUser1,
+			FlagKey:   flagKeyFeatureX,
 			Enabled:   true,
 			Variant:   "control",
 		},
@@ -290,21 +304,21 @@ func testAssignmentSaveAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 
 	resp, err := srv.GetAssignment(ctx, &pb.GetAssignmentRequest{
 		Tenant:    ts(tid),
-		SubjectId: "user-1",
-		FlagKey:   "feature-x",
+		SubjectId: subjectUser1,
+		FlagKey:   flagKeyFeatureX,
 	})
 	if err != nil {
-		t.Fatalf("GetAssignment: %v", err)
+		t.Fatalf(fmtGetAssignment, err)
 	}
 	if !resp.GetFound() {
 		t.Fatal("expected found=true")
 	}
 	a := resp.GetAssignment()
-	if a.GetSubjectId() != "user-1" {
-		t.Errorf("subject_id = %q, want %q", a.GetSubjectId(), "user-1")
+	if a.GetSubjectId() != subjectUser1 {
+		t.Errorf("subject_id = %q, want %q", a.GetSubjectId(), subjectUser1)
 	}
-	if a.GetFlagKey() != "feature-x" {
-		t.Errorf("flag_key = %q, want %q", a.GetFlagKey(), "feature-x")
+	if a.GetFlagKey() != flagKeyFeatureX {
+		t.Errorf("flag_key = %q, want %q", a.GetFlagKey(), flagKeyFeatureX)
 	}
 	if !a.GetEnabled() {
 		t.Error("enabled = false, want true")
@@ -325,8 +339,8 @@ func testAssignmentUpsert(t *testing.T, srv pb.PersistenceServiceServer) {
 		_, err := srv.SaveAssignment(ctx, &pb.SaveAssignmentRequest{
 			Tenant: ts(tid),
 			Assignment: &pb.Assignment{
-				SubjectId: "user-1",
-				FlagKey:   "feature-x",
+				SubjectId: subjectUser1,
+				FlagKey:   flagKeyFeatureX,
 				Enabled:   true,
 				Variant:   variant,
 			},
@@ -341,11 +355,11 @@ func testAssignmentUpsert(t *testing.T, srv pb.PersistenceServiceServer) {
 
 	resp, err := srv.GetAssignment(ctx, &pb.GetAssignmentRequest{
 		Tenant:    ts(tid),
-		SubjectId: "user-1",
-		FlagKey:   "feature-x",
+		SubjectId: subjectUser1,
+		FlagKey:   flagKeyFeatureX,
 	})
 	if err != nil {
-		t.Fatalf("GetAssignment: %v", err)
+		t.Fatalf(fmtGetAssignment, err)
 	}
 	if resp.GetAssignment().GetVariant() != "treatment" {
 		t.Errorf("variant = %q, want %q", resp.GetAssignment().GetVariant(), "treatment")
@@ -360,8 +374,8 @@ func testAssignmentExpiry(t *testing.T, srv pb.PersistenceServiceServer) {
 	_, err := srv.SaveAssignment(ctx, &pb.SaveAssignmentRequest{
 		Tenant: ts(tid),
 		Assignment: &pb.Assignment{
-			SubjectId: "user-1",
-			FlagKey:   "feature-x",
+			SubjectId: subjectUser1,
+			FlagKey:   flagKeyFeatureX,
 			Enabled:   true,
 			Variant:   "control",
 			ExpiresAt: past,
@@ -373,11 +387,11 @@ func testAssignmentExpiry(t *testing.T, srv pb.PersistenceServiceServer) {
 
 	resp, err := srv.GetAssignment(ctx, &pb.GetAssignmentRequest{
 		Tenant:    ts(tid),
-		SubjectId: "user-1",
-		FlagKey:   "feature-x",
+		SubjectId: subjectUser1,
+		FlagKey:   flagKeyFeatureX,
 	})
 	if err != nil {
-		t.Fatalf("GetAssignment: %v", err)
+		t.Fatalf(fmtGetAssignment, err)
 	}
 	if resp.GetFound() {
 		t.Error("expected found=false for expired assignment")
@@ -394,7 +408,7 @@ func testAssignmentNotFound(t *testing.T, srv pb.PersistenceServiceServer) {
 		FlagKey:   "no-such-flag",
 	})
 	if err != nil {
-		t.Fatalf("GetAssignment: %v", err)
+		t.Fatalf(fmtGetAssignment, err)
 	}
 	if resp.GetFound() {
 		t.Error("expected found=false for non-existent assignment")
@@ -417,7 +431,7 @@ func testExperimentCreateAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 		Tenant: ts(tid),
 		Experiment: &pb.Experiment{
 			Key:              "exp-1",
-			Name:             "Experiment One",
+			Name:             nameExperimentOne,
 			Status:           experimentStatusDraft,
 			StickyAssignment: true,
 			Variants: []*pb.Variant{
@@ -438,8 +452,8 @@ func testExperimentCreateAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 	if e.GetKey() != "exp-1" {
 		t.Errorf("key = %q, want %q", e.GetKey(), "exp-1")
 	}
-	if e.GetName() != "Experiment One" {
-		t.Errorf("name = %q, want %q", e.GetName(), "Experiment One")
+	if e.GetName() != nameExperimentOne {
+		t.Errorf("name = %q, want %q", e.GetName(), nameExperimentOne)
 	}
 	if e.GetStatus() != experimentStatusDraft {
 		t.Errorf("status = %q, want %q", e.GetStatus(), experimentStatusDraft)
@@ -454,7 +468,7 @@ func testExperimentCreateAndGet(t *testing.T, srv pb.PersistenceServiceServer) {
 		t.Errorf("allocation count = %d, want 2", len(e.GetAllocation()))
 	}
 	if e.GetCreatedAt() == 0 {
-		t.Error("created_at should be set")
+		t.Error(msgCreatedAtSet)
 	}
 
 	getResp, err := srv.GetExperiment(ctx, &pb.GetExperimentRequest{
@@ -507,10 +521,10 @@ func testExperimentListPagination(t *testing.T, srv pb.PersistenceServiceServer)
 		t.Fatalf("ListExperiments page 1: %v", err)
 	}
 	if len(resp1.GetExperiments()) != 2 {
-		t.Errorf("page 1 count = %d, want 2", len(resp1.GetExperiments()))
+		t.Errorf(fmtPage1Count2, len(resp1.GetExperiments()))
 	}
 	if resp1.GetPagination().GetTotal() != 3 {
-		t.Errorf("total = %d, want 3", resp1.GetPagination().GetTotal())
+		t.Errorf(fmtTotalWant3, resp1.GetPagination().GetTotal())
 	}
 
 	resp2, err := srv.ListExperiments(ctx, &pb.ListExperimentsRequest{
@@ -521,7 +535,7 @@ func testExperimentListPagination(t *testing.T, srv pb.PersistenceServiceServer)
 		t.Fatalf("ListExperiments page 2: %v", err)
 	}
 	if len(resp2.GetExperiments()) != 1 {
-		t.Errorf("page 2 count = %d, want 1", len(resp2.GetExperiments()))
+		t.Errorf(fmtPage2Count1, len(resp2.GetExperiments()))
 	}
 }
 
@@ -576,7 +590,7 @@ func testAPIKeyCreateAndGetByHash(t *testing.T, srv pb.PersistenceServiceServer)
 	createResp, err := srv.CreateAPIKey(ctx, &pb.CreateAPIKeyRequest{
 		Tenant: ts(tid),
 		ApiKey: &pb.APIKey{
-			Id:        tid + "-key-1",
+			Id:        tid + suffixKey1,
 			KeyHash:   "hash-" + tid,
 			KeyPrefix: "fb_",
 			Scope:     apiKeyScopeEval,
@@ -588,8 +602,8 @@ func testAPIKeyCreateAndGetByHash(t *testing.T, srv pb.PersistenceServiceServer)
 		t.Fatalf("CreateAPIKey: %v", err)
 	}
 	k := createResp.GetApiKey()
-	if k.GetId() != tid+"-key-1" {
-		t.Errorf("id = %q, want %q", k.GetId(), tid+"-key-1")
+	if k.GetId() != tid+suffixKey1 {
+		t.Errorf("id = %q, want %q", k.GetId(), tid+suffixKey1)
 	}
 	if k.GetKeyHash() != "hash-"+tid {
 		t.Errorf("key_hash = %q, want %q", k.GetKeyHash(), "hash-"+tid)
@@ -601,14 +615,14 @@ func testAPIKeyCreateAndGetByHash(t *testing.T, srv pb.PersistenceServiceServer)
 		t.Errorf("created_by = %q, want %q", k.GetCreatedBy(), "admin")
 	}
 	if k.GetCreatedAt() == 0 {
-		t.Error("created_at should be set")
+		t.Error(msgCreatedAtSet)
 	}
 
 	getResp, err := srv.GetAPIKeyByHash(ctx, &pb.GetAPIKeyByHashRequest{
 		KeyHash: "hash-" + tid,
 	})
 	if err != nil {
-		t.Fatalf("GetAPIKeyByHash: %v", err)
+		t.Fatalf(fmtGetAPIKeyByHash, err)
 	}
 	if !getResp.GetFound() {
 		t.Fatal("expected found=true")
@@ -649,10 +663,10 @@ func testAPIKeyListPagination(t *testing.T, srv pb.PersistenceServiceServer) {
 		t.Fatalf("ListAPIKeys page 1: %v", err)
 	}
 	if len(resp1.GetApiKeys()) != 2 {
-		t.Errorf("page 1 count = %d, want 2", len(resp1.GetApiKeys()))
+		t.Errorf(fmtPage1Count2, len(resp1.GetApiKeys()))
 	}
 	if resp1.GetPagination().GetTotal() != 3 {
-		t.Errorf("total = %d, want 3", resp1.GetPagination().GetTotal())
+		t.Errorf(fmtTotalWant3, resp1.GetPagination().GetTotal())
 	}
 
 	resp2, err := srv.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{
@@ -663,7 +677,7 @@ func testAPIKeyListPagination(t *testing.T, srv pb.PersistenceServiceServer) {
 		t.Fatalf("ListAPIKeys page 2: %v", err)
 	}
 	if len(resp2.GetApiKeys()) != 1 {
-		t.Errorf("page 2 count = %d, want 1", len(resp2.GetApiKeys()))
+		t.Errorf(fmtPage2Count1, len(resp2.GetApiKeys()))
 	}
 }
 
@@ -697,7 +711,7 @@ func testAPIKeyRevoke(t *testing.T, srv pb.PersistenceServiceServer) {
 		KeyHash: "hash-" + tid,
 	})
 	if err != nil {
-		t.Fatalf("GetAPIKeyByHash: %v", err)
+		t.Fatalf(fmtGetAPIKeyByHash, err)
 	}
 	if !getResp.GetFound() {
 		t.Fatal("expected found=true after revoke")
@@ -714,7 +728,7 @@ func testAPIKeyGetByHashNotFound(t *testing.T, srv pb.PersistenceServiceServer) 
 		KeyHash: "nonexistent-hash",
 	})
 	if err != nil {
-		t.Fatalf("GetAPIKeyByHash: %v", err)
+		t.Fatalf(fmtGetAPIKeyByHash, err)
 	}
 	if resp.GetFound() {
 		t.Error("expected found=false for non-existent key")

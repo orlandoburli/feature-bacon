@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const pathReadyz = "/readyz"
+
 type stubChecker struct {
 	name   string
 	health ModuleHealth
@@ -24,7 +26,7 @@ func TestHandleHealthz(t *testing.T) {
 	HandleHealthz().ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Errorf(fmtWantStatus, w.Code, http.StatusOK)
 	}
 
 	ct := w.Header().Get("Content-Type")
@@ -34,29 +36,29 @@ func TestHandleHealthz(t *testing.T) {
 
 	var body map[string]string
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(fmtDecode, err)
 	}
 	if body["status"] != "ok" {
-		t.Errorf("status = %q, want %q", body["status"], "ok")
+		t.Errorf(fmtStatusFieldWant, body["status"], "ok")
 	}
 }
 
 func TestHandleReadyz_NoCheckers(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, pathReadyz, nil)
 	w := httptest.NewRecorder()
 
 	HandleReadyz().ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Errorf(fmtWantStatus, w.Code, http.StatusOK)
 	}
 
 	var body map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(fmtDecode, err)
 	}
 	if body["status"] != "ready" {
-		t.Errorf("status = %q, want %q", body["status"], "ready")
+		t.Errorf(fmtStatusFieldWant, body["status"], "ready")
 	}
 }
 
@@ -66,21 +68,21 @@ func TestHandleReadyz_AllHealthy(t *testing.T) {
 		&stubChecker{name: "publisher", health: ModuleHealth{Status: "ok", LatencyMs: 3}},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, pathReadyz, nil)
 	w := httptest.NewRecorder()
 
 	HandleReadyz(checkers...).ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Errorf(fmtWantStatus, w.Code, http.StatusOK)
 	}
 
 	var body map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(fmtDecode, err)
 	}
 	if body["status"] != "ready" {
-		t.Errorf("status = %q, want %q", body["status"], "ready")
+		t.Errorf(fmtStatusFieldWant, body["status"], "ready")
 	}
 
 	modules, ok := body["modules"].(map[string]any)
@@ -98,20 +100,20 @@ func TestHandleReadyz_OneUnhealthy(t *testing.T) {
 		&stubChecker{name: "publisher", health: ModuleHealth{Status: "error", Message: "connection refused"}},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, pathReadyz, nil)
 	w := httptest.NewRecorder()
 
 	HandleReadyz(checkers...).ServeHTTP(w, req)
 
 	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusServiceUnavailable)
+		t.Errorf(fmtWantStatus, w.Code, http.StatusServiceUnavailable)
 	}
 
 	var body map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode: %v", err)
+		t.Fatalf(fmtDecode, err)
 	}
 	if body["status"] != "not_ready" {
-		t.Errorf("status = %q, want %q", body["status"], "not_ready")
+		t.Errorf(fmtStatusFieldWant, body["status"], "not_ready")
 	}
 }

@@ -5,9 +5,11 @@ import (
 	"time"
 )
 
+const tenantOne = "tenant-1"
+
 func TestNewEvent_Fields(t *testing.T) {
 	before := time.Now().Unix()
-	event := NewEvent(EventFlagCreated, "tenant-1", map[string]string{"key": "dark-mode"})
+	event := NewEvent(EventFlagCreated, tenantOne, map[string]string{"key": "dark-mode"})
 	after := time.Now().Unix()
 
 	if event.EventId == "" {
@@ -16,8 +18,8 @@ func TestNewEvent_Fields(t *testing.T) {
 	if event.EventType != EventFlagCreated {
 		t.Errorf("EventType = %q, want %q", event.EventType, EventFlagCreated)
 	}
-	if event.TenantId != "tenant-1" {
-		t.Errorf("TenantId = %q, want %q", event.TenantId, "tenant-1")
+	if event.TenantId != tenantOne {
+		t.Errorf("TenantId = %q, want %q", event.TenantId, tenantOne)
 	}
 	if event.Timestamp < before || event.Timestamp > after {
 		t.Errorf("Timestamp = %d, expected between %d and %d", event.Timestamp, before, after)

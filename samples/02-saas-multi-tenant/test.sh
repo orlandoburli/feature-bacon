@@ -9,7 +9,7 @@ GLOBEX_MGMT_KEY="${GLOBEX_MGMT_KEY:-ba_mgmt_globex_bootstrap}"
 ACME_EVAL_KEY="${ACME_EVAL_KEY:-}"
 GLOBEX_EVAL_KEY="${GLOBEX_EVAL_KEY:-}"
 
-if [ -z "$ACME_EVAL_KEY" ] || [ -z "$GLOBEX_EVAL_KEY" ]; then
+if [[ -z "$ACME_EVAL_KEY" ]] || [[ -z "$GLOBEX_EVAL_KEY" ]]; then
   echo "Usage: ACME_EVAL_KEY=<key> GLOBEX_EVAL_KEY=<key> bash test.sh"
   echo ""
   echo "Run seed.sh first to create the evaluation keys."

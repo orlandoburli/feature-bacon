@@ -26,6 +26,9 @@ const (
 	fmtVariantsLenWant2         = "variants len = %d, want 2"
 	fmtAllocationLenWant2       = "allocation len = %d, want 2"
 	fmtStatusFieldWant          = "status = %q, want %q"
+	suffixStart                 = "/start"
+	suffixPause                 = "/pause"
+	suffixComplete              = "/complete"
 )
 
 type mockExperimentManager struct {
@@ -345,7 +348,7 @@ func TestHandleStartExperiment_FromDraft(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -368,7 +371,7 @@ func TestHandleStartExperiment_FromPaused(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -387,7 +390,7 @@ func TestHandleStartExperiment_FromRunning_Conflict(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -406,7 +409,7 @@ func TestHandleStartExperiment_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -421,7 +424,7 @@ func TestHandlePauseExperiment_FromRunning(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentPause, HandlePauseExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/pause", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixPause, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -448,7 +451,7 @@ func TestHandlePauseExperiment_FromDraft_Conflict(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentPause, HandlePauseExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/pause", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixPause, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -467,7 +470,7 @@ func TestHandlePauseExperiment_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentPause, HandlePauseExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/pause", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixPause, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -482,7 +485,7 @@ func TestHandleCompleteExperiment_FromRunning(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentComplete, HandleCompleteExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/complete", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixComplete, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -505,7 +508,7 @@ func TestHandleCompleteExperiment_FromPaused(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentComplete, HandleCompleteExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/complete", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixComplete, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -524,7 +527,7 @@ func TestHandleCompleteExperiment_FromDraft_Conflict(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentComplete, HandleCompleteExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/complete", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixComplete, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -543,7 +546,7 @@ func TestHandleCompleteExperiment_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentComplete, HandleCompleteExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/complete", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixComplete, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -562,7 +565,7 @@ func TestHandleStartExperiment_GetError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -584,7 +587,7 @@ func TestHandleStartExperiment_UpdateError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(routePostExperimentStart, HandleStartExperiment(em))
 
-	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+"/start", nil)
+	req := httptest.NewRequest(http.MethodPost, pathExperimentsPrefix+experimentKeyOnboarding+suffixStart, nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 

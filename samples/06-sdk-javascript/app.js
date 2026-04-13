@@ -46,7 +46,7 @@ app.get('/products', async (req, res) => {
     client.getVariant('checkout_redesign', ctx),
   ]);
 
-  const discount = newPricing ? 0.9 : 1.0;
+  const discount = newPricing ? 0.9 : 1;
   const products = [
     { id: 1, name: 'Widget Pro', price: +(29.99 * discount).toFixed(2) },
     { id: 2, name: 'Widget Basic', price: +(9.99 * discount).toFixed(2) },

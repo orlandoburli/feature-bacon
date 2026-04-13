@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	tenantTest = "tenant-1"
-	flagKeyDM  = "dark-mode"
-	expKeyOB   = "onboarding"
+	tenantTest      = "tenant-1"
+	flagKeyDM       = "dark-mode"
+	expKeyOB        = "onboarding"
+	fmtUnexpectedPE = "unexpected error: %v"
+	fmtEventTypeW   = "EventType = %q, want %q"
 )
 
 var errPub = errors.New("publish failed")
@@ -60,10 +62,10 @@ func TestPublishingFlagManager_GetFlag_Delegates(t *testing.T) {
 
 	flag, err := pfm.GetFlag(context.Background(), tenantTest, flagKeyDM)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if flag.Key != flagKeyMyFlag {
-		t.Errorf("key = %q, want %q", flag.Key, flagKeyMyFlag)
+		t.Errorf(fmtKeyWant, flag.Key, flagKeyMyFlag)
 	}
 }
 
@@ -78,7 +80,7 @@ func TestPublishingFlagManager_ListFlags_Delegates(t *testing.T) {
 
 	flags, total, err := pfm.ListFlags(context.Background(), tenantTest, 1, 10)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if len(flags) != 1 {
 		t.Errorf("flags len = %d, want 1", len(flags))
@@ -102,15 +104,15 @@ func TestPublishingFlagManager_CreateFlag_PublishesEvent(t *testing.T) {
 		Key: flagKeyDM, Type: "boolean", Semantics: "flag",
 	})
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if flag.Key != flagKeyDM {
-		t.Errorf("key = %q, want %q", flag.Key, flagKeyDM)
+		t.Errorf(fmtKeyWant, flag.Key, flagKeyDM)
 	}
 
 	event := pub.waitEvent(t)
 	if event.EventType != "flag.created" {
-		t.Errorf("EventType = %q, want %q", event.EventType, "flag.created")
+		t.Errorf(fmtEventTypeW, event.EventType, "flag.created")
 	}
 	if event.TenantId != tenantTest {
 		t.Errorf("TenantId = %q, want %q", event.TenantId, tenantTest)
@@ -129,12 +131,12 @@ func TestPublishingFlagManager_UpdateFlag_PublishesEvent(t *testing.T) {
 
 	_, err := pfm.UpdateFlag(context.Background(), tenantTest, &pb.FlagDefinition{Key: flagKeyDM})
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 
 	event := pub.waitEvent(t)
 	if event.EventType != "flag.updated" {
-		t.Errorf("EventType = %q, want %q", event.EventType, "flag.updated")
+		t.Errorf(fmtEventTypeW, event.EventType, "flag.updated")
 	}
 }
 
@@ -146,12 +148,12 @@ func TestPublishingFlagManager_DeleteFlag_PublishesEvent(t *testing.T) {
 	pfm := NewPublishingFlagManager(fm, pub)
 
 	if err := pfm.DeleteFlag(context.Background(), tenantTest, flagKeyDM); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 
 	event := pub.waitEvent(t)
 	if event.EventType != "flag.deleted" {
-		t.Errorf("EventType = %q, want %q", event.EventType, "flag.deleted")
+		t.Errorf(fmtEventTypeW, event.EventType, "flag.deleted")
 	}
 }
 
@@ -184,7 +186,7 @@ func TestPublishingFlagManager_PublishFailure_DoesNotAffectCaller(t *testing.T) 
 		t.Fatalf("expected no error from caller, got %v", err)
 	}
 	if flag.Key != flagKeyDM {
-		t.Errorf("key = %q, want %q", flag.Key, flagKeyDM)
+		t.Errorf(fmtKeyWant, flag.Key, flagKeyDM)
 	}
 }
 
@@ -201,10 +203,10 @@ func TestPublishingExperimentManager_GetExperiment_Delegates(t *testing.T) {
 
 	exp, err := pem.GetExperiment(context.Background(), tenantTest, expKeyOB)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if exp.Key != experimentKeyOnboarding {
-		t.Errorf("key = %q, want %q", exp.Key, experimentKeyOnboarding)
+		t.Errorf(fmtKeyWant, exp.Key, experimentKeyOnboarding)
 	}
 }
 
@@ -219,7 +221,7 @@ func TestPublishingExperimentManager_ListExperiments_Delegates(t *testing.T) {
 
 	exps, total, err := pem.ListExperiments(context.Background(), tenantTest, 1, 10)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if len(exps) != 1 {
 		t.Errorf("experiments len = %d, want 1", len(exps))
@@ -244,15 +246,15 @@ func TestPublishingExperimentManager_CreateExperiment_PublishesEvent(t *testing.
 		Key: expKeyOB, Name: "Onboarding",
 	})
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 	if exp.Key != expKeyOB {
-		t.Errorf("key = %q, want %q", exp.Key, expKeyOB)
+		t.Errorf(fmtKeyWant, exp.Key, expKeyOB)
 	}
 
 	event := pub.waitEvent(t)
 	if event.EventType != "experiment.created" {
-		t.Errorf("EventType = %q, want %q", event.EventType, "experiment.created")
+		t.Errorf(fmtEventTypeW, event.EventType, "experiment.created")
 	}
 	if event.TenantId != tenantTest {
 		t.Errorf("TenantId = %q, want %q", event.TenantId, tenantTest)
@@ -271,12 +273,12 @@ func TestPublishingExperimentManager_UpdateExperiment_PublishesEvent(t *testing.
 
 	_, err := pem.UpdateExperiment(context.Background(), tenantTest, &pb.Experiment{Key: expKeyOB})
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf(fmtUnexpectedPE, err)
 	}
 
 	event := pub.waitEvent(t)
 	if event.EventType != "experiment.updated" {
-		t.Errorf("EventType = %q, want %q", event.EventType, "experiment.updated")
+		t.Errorf(fmtEventTypeW, event.EventType, "experiment.updated")
 	}
 }
 
