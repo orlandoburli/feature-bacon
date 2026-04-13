@@ -10,7 +10,7 @@ Add the dependency to your `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>io.featurebacon</groupId>
+    <groupId>io.github.orlandoburli</groupId>
     <artifactId>feature-bacon-sdk</artifactId>
     <version>0.1.0</version>
 </dependency>
@@ -19,7 +19,7 @@ Add the dependency to your `pom.xml`:
 Or with Gradle:
 
 ```groovy
-implementation 'io.featurebacon:feature-bacon-sdk:0.1.0'
+implementation 'io.github.orlandoburli:feature-bacon-sdk:0.1.0'
 ```
 
 ## Quick Start

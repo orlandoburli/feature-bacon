@@ -1,6 +1,6 @@
 # 08 — Java SDK
 
-A Java HTTP server that uses the Feature Bacon Java SDK (`io.featurebacon:feature-bacon-sdk`) to evaluate feature flags at runtime. No Spring — just `com.sun.net.httpserver.HttpServer` and the SDK.
+A Java HTTP server that uses the Feature Bacon Java SDK (`io.github.orlandoburli:feature-bacon-sdk`) to evaluate feature flags at runtime. No Spring — just `com.sun.net.httpserver.HttpServer` and the SDK.
 
 ## What this demonstrates
 
