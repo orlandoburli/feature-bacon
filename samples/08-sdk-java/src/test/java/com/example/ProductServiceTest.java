@@ -7,7 +7,6 @@ import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,6 +17,9 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProductServiceTest {
+
+    private static final String PATH_HEALTH = "/health";
+    private static final String PATH_PRODUCTS = "/products";
 
     private HttpServer mockBacon;
     private HttpServer appServer;
@@ -39,7 +41,7 @@ class ProductServiceTest {
     void testHealthWhenBaconIsUp() throws Exception {
         boot(true, false, false);
 
-        HttpResponse<String> resp = get("/health");
+        HttpResponse<String> resp = get(PATH_HEALTH);
         assertEquals(200, resp.statusCode());
         assertTrue(resp.body().contains("\"status\":\"ok\""));
         assertTrue(resp.body().contains("\"baconHealthy\":true"));
@@ -49,7 +51,7 @@ class ProductServiceTest {
     void testHealthWhenBaconIsDown() throws Exception {
         boot(false, false, false);
 
-        HttpResponse<String> resp = get("/health");
+        HttpResponse<String> resp = get(PATH_HEALTH);
         assertEquals(503, resp.statusCode());
         assertTrue(resp.body().contains("\"status\":\"degraded\""));
         assertTrue(resp.body().contains("\"baconHealthy\":false"));
@@ -100,7 +102,7 @@ class ProductServiceTest {
     void testProductsNewPricingEnabled() throws Exception {
         boot(true, false, true);
 
-        HttpResponse<String> resp = get("/products");
+        HttpResponse<String> resp = get(PATH_PRODUCTS);
         assertEquals(200, resp.statusCode());
         String body = resp.body();
         assertTrue(body.contains("\"newPricingActive\":true"));
@@ -114,7 +116,7 @@ class ProductServiceTest {
     void testProductsNewPricingDisabled() throws Exception {
         boot(true, false, false);
 
-        HttpResponse<String> resp = get("/products");
+        HttpResponse<String> resp = get(PATH_PRODUCTS);
         assertEquals(200, resp.statusCode());
         String body = resp.body();
         assertTrue(body.contains("\"newPricingActive\":false"));
@@ -125,7 +127,7 @@ class ProductServiceTest {
 
     // ── helpers ─────────────────────────────────────────────────────
 
-    private void boot(boolean healthOK, boolean evaluateError, boolean newPricingEnabled) throws Exception {
+    private void boot(boolean healthOK, boolean evaluateError, boolean newPricingEnabled) throws IOException {
         mockBacon = startMockBacon(healthOK, evaluateError, newPricingEnabled);
         BaconClient client = BaconClient.builder(
                 "http://localhost:" + mockBacon.getAddress().getPort()
@@ -133,21 +135,9 @@ class ProductServiceTest {
         ProductService svc = new ProductService(client);
 
         appServer = HttpServer.create(new InetSocketAddress(0), 0);
-        for (String[] m : new String[][]{{"/", "handleHome"}, {"/products", "handleProducts"}, {"/health", "handleHealth"}}) {
-            Method method = ProductService.class.getDeclaredMethod(m[1], HttpExchange.class);
-            method.setAccessible(true);
-            appServer.createContext(m[0], ex -> {
-                try {
-                    method.invoke(svc, ex);
-                } catch (java.lang.reflect.InvocationTargetException ite) {
-                    Throwable cause = ite.getCause();
-                    if (cause instanceof IOException) throw (IOException) cause;
-                    throw new IOException(cause);
-                } catch (Exception e) {
-                    throw new IOException(e);
-                }
-            });
-        }
+        appServer.createContext("/", svc::handleHome);
+        appServer.createContext(PATH_PRODUCTS, svc::handleProducts);
+        appServer.createContext(PATH_HEALTH, svc::handleHealth);
         appServer.start();
         appBase = "http://localhost:" + appServer.getAddress().getPort();
     }
@@ -187,7 +177,8 @@ class ProductServiceTest {
             String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             String flagKey = extractJsonString(body, "flag_key");
             boolean enabled = "new_pricing".equals(flagKey) && newPricingEnabled;
-            String variant = "checkout_redesign".equals(flagKey) ? "modern" : (enabled ? "on" : "off");
+            String defaultVariant = enabled ? "on" : "off";
+            String variant = "checkout_redesign".equals(flagKey) ? "modern" : defaultVariant;
             mockRespond(ex, 200, String.format(
                     "{\"tenant_id\":\"t\",\"flag_key\":\"%s\",\"enabled\":%b,\"variant\":\"%s\",\"reason\":\"rule_match\"}",
                     flagKey, enabled, variant
@@ -198,7 +189,7 @@ class ProductServiceTest {
         return mock;
     }
 
-    private HttpResponse<String> get(String path) throws Exception {
+    private HttpResponse<String> get(String path) throws IOException, InterruptedException {
         return http.send(
                 HttpRequest.newBuilder().uri(URI.create(appBase + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString()

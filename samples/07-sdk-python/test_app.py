@@ -6,7 +6,7 @@ from app import app
 @pytest.fixture
 def test_client():
     app.config["TESTING"] = True
-    app.config["WTF_CSRF_ENABLED"] = False
+    app.config["WTF_CSRF_ENABLED"] = False  # NOSONAR
     with app.test_client() as c:
         yield c
 
@@ -87,9 +87,9 @@ def test_products_new_pricing_enabled(test_client):
         data = resp.get_json()
         assert data["newPricingActive"] is True
         prices = {p["name"]: p["price"] for p in data["products"]}
-        assert prices["Widget Pro"] == round(29.99 * 0.9, 2)
-        assert prices["Widget Basic"] == round(9.99 * 0.9, 2)
-        assert prices["Widget Enterprise"] == round(99.99 * 0.9, 2)
+        assert prices["Widget Pro"] == pytest.approx(round(29.99 * 0.9, 2))
+        assert prices["Widget Basic"] == pytest.approx(round(9.99 * 0.9, 2))
+        assert prices["Widget Enterprise"] == pytest.approx(round(99.99 * 0.9, 2))
 
 
 def test_products_new_pricing_disabled(test_client):
@@ -101,9 +101,9 @@ def test_products_new_pricing_disabled(test_client):
         data = resp.get_json()
         assert data["newPricingActive"] is False
         prices = {p["name"]: p["price"] for p in data["products"]}
-        assert prices["Widget Pro"] == 29.99
-        assert prices["Widget Basic"] == 9.99
-        assert prices["Widget Enterprise"] == 99.99
+        assert prices["Widget Pro"] == pytest.approx(29.99)
+        assert prices["Widget Basic"] == pytest.approx(9.99)
+        assert prices["Widget Enterprise"] == pytest.approx(99.99)
 
 
 def test_products_variant(test_client):

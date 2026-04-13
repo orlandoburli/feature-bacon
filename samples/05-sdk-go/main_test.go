@@ -11,6 +11,49 @@ import (
 	bacon "github.com/orlandoburli/feature-bacon/sdks/go"
 )
 
+const (
+	errStatusWant200 = "status = %d, want 200"
+	errDecodeBodyFmt = "decode body: %v"
+	errUserWantFmt   = "user = %v, want %q"
+)
+
+func handleMockEvaluate(t *testing.T, w http.ResponseWriter, r *http.Request, flagResults map[string]bacon.EvaluationResult) {
+	t.Helper()
+	var req struct {
+		FlagKey string `json:"flagKey"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	res, ok := flagResults[req.FlagKey]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
+
+func handleMockBatch(t *testing.T, w http.ResponseWriter, r *http.Request, flagResults map[string]bacon.EvaluationResult) {
+	t.Helper()
+	var req struct {
+		FlagKeys []string `json:"flagKeys"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var results []bacon.EvaluationResult
+	for _, key := range req.FlagKeys {
+		if res, ok := flagResults[key]; ok {
+			results = append(results, res)
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"results": results})
+}
+
 func mockBaconAPI(t *testing.T, healthOK bool, flagResults map[string]bacon.EvaluationResult) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -22,36 +65,9 @@ func mockBaconAPI(t *testing.T, healthOK bool, flagResults map[string]bacon.Eval
 				w.WriteHeader(http.StatusServiceUnavailable)
 			}
 		case "/api/v1/evaluate":
-			var req struct {
-				FlagKey string `json:"flagKey"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			res, ok := flagResults[req.FlagKey]
-			if !ok {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(res)
+			handleMockEvaluate(t, w, r, flagResults)
 		case "/api/v1/evaluate/batch":
-			var req struct {
-				FlagKeys []string `json:"flagKeys"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			var results []bacon.EvaluationResult
-			for _, key := range req.FlagKeys {
-				if res, ok := flagResults[key]; ok {
-					results = append(results, res)
-				}
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{"results": results})
+			handleMockBatch(t, w, r, flagResults)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -94,11 +110,11 @@ func TestHandleHealth_Healthy(t *testing.T) {
 	handleHealth(client)(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
+		t.Errorf(errStatusWant200, rec.Code)
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["status"] != "ok" {
 		t.Errorf("status = %v, want %q", body["status"], "ok")
@@ -122,7 +138,7 @@ func TestHandleHealth_Unhealthy(t *testing.T) {
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["status"] != "degraded" {
 		t.Errorf("status = %v, want %q", body["status"], "degraded")
@@ -148,17 +164,17 @@ func TestHandleHome(t *testing.T) {
 	handleHome(client)(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
+		t.Errorf(errStatusWant200, rec.Code)
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["service"] != "product-catalog" {
 		t.Errorf("service = %v, want %q", body["service"], "product-catalog")
 	}
 	if body["user"] != "alice" {
-		t.Errorf("user = %v, want %q", body["user"], "alice")
+		t.Errorf(errUserWantFmt, body["user"], "alice")
 	}
 	features, ok := body["features"].(map[string]any)
 	if !ok {
@@ -195,10 +211,10 @@ func TestHandleHome_DefaultUser(t *testing.T) {
 
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["user"] != "anonymous" {
-		t.Errorf("user = %v, want %q", body["user"], "anonymous")
+		t.Errorf(errUserWantFmt, body["user"], "anonymous")
 	}
 }
 
@@ -216,11 +232,11 @@ func TestHandleProducts_NewPricingEnabled(t *testing.T) {
 	handleProducts(client)(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
+		t.Errorf(errStatusWant200, rec.Code)
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["newPricingActive"] != true {
 		t.Errorf("newPricingActive = %v, want true", body["newPricingActive"])
@@ -254,11 +270,11 @@ func TestHandleProducts_NewPricingDisabled(t *testing.T) {
 	handleProducts(client)(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200", rec.Code)
+		t.Errorf(errStatusWant200, rec.Code)
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["newPricingActive"] != false {
 		t.Errorf("newPricingActive = %v, want false", body["newPricingActive"])
@@ -289,7 +305,7 @@ func TestHandleProducts_DefaultUser(t *testing.T) {
 
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	if body["newPricingActive"] != false {
 		t.Errorf("newPricingActive = %v, want false", body["newPricingActive"])
@@ -312,7 +328,7 @@ func TestHandleHome_BaconError(t *testing.T) {
 	}
 	var body map[string]any
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		t.Fatalf(errDecodeBodyFmt, err)
 	}
 	features, ok := body["features"].(map[string]any)
 	if !ok {
@@ -322,6 +338,6 @@ func TestHandleHome_BaconError(t *testing.T) {
 		t.Errorf("expected empty features on error, got %d entries", len(features))
 	}
 	if body["user"] != "eve" {
-		t.Errorf("user = %v, want %q", body["user"], "eve")
+		t.Errorf(errUserWantFmt, body["user"], "eve")
 	}
 }
