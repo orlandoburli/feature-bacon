@@ -57,9 +57,17 @@ runs:
           fi
 
           echo "::notice::SonarCloud project created"
-        else
-          echo "SonarCloud project already exists, skipping creation."
         fi
+
+        curl -s -o /dev/null -w "" -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
+          -d "key=sonar.leak.period" \
+          -d "value=previous_version" \
+          -d "component=$SONAR_PROJECT_KEY" || true
+
+        curl -s -o /dev/null -w "" -X POST -u "$SONAR_TOKEN:" "$API/settings/set" \
+          -d "key=sonar.leak.period.type" \
+          -d "value=previous_version" \
+          -d "component=$SONAR_PROJECT_KEY" || true
 
     - name: Ensure SonarCloud main branch
       shell: bash
