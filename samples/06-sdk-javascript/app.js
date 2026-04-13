@@ -65,6 +65,7 @@ app.get('/health', async (_req, res) => {
   res.json({ status, baconHealthy: healthy });
 });
 
+/* istanbul ignore next -- startup, not testable via require */
 if (require.main === module) {
   app.listen(port, () => console.log(`E-commerce API on :${port}`));
 }
