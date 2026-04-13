@@ -6,6 +6,8 @@ WORKDIR /build/app
 RUN go build -o /product-service .
 
 FROM alpine:3.20
+RUN adduser -D appuser
 COPY --from=builder /product-service /product-service
+USER appuser
 EXPOSE 3000
 CMD ["/product-service"]

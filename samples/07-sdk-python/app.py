@@ -1,9 +1,12 @@
 import os
 
 from flask import Flask, request, jsonify
+from flask_wtf.csrf import CSRFProtect
 from feature_bacon import BaconClient, EvaluationContext
 
 app = Flask(__name__)
+app.config["WTF_CSRF_ENABLED"] = bool(os.environ.get("CSRF_ENABLED", ""))
+CSRFProtect(app)
 
 bacon_url = os.environ.get("BACON_URL", "http://localhost:8080")
 api_key = os.environ.get("BACON_API_KEY", "")

@@ -108,16 +108,8 @@ func HandleListExperiments(em ExperimentManager) http.HandlerFunc {
 
 func HandleGetExperiment(em ExperimentManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tenantID := tenantFromContext(r)
-		experimentKey := r.PathValue("experimentKey")
-
-		exp, err := em.GetExperiment(r.Context(), tenantID, experimentKey)
-		if err != nil {
-			problem.Write(w, problem.InternalError(err.Error(), r.URL.Path))
-			return
-		}
-		if exp == nil {
-			problem.Write(w, problem.NotFound("experiment not found", r.URL.Path))
+		exp, ok := getExperimentOr404(em, w, r)
+		if !ok {
 			return
 		}
 
@@ -196,16 +188,8 @@ func HandleCompleteExperiment(em ExperimentManager) http.HandlerFunc {
 
 func handleLifecycleTransition(em ExperimentManager, target string, allowedFrom ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tenantID := tenantFromContext(r)
-		experimentKey := r.PathValue("experimentKey")
-
-		exp, err := em.GetExperiment(r.Context(), tenantID, experimentKey)
-		if err != nil {
-			problem.Write(w, problem.InternalError(err.Error(), r.URL.Path))
-			return
-		}
-		if exp == nil {
-			problem.Write(w, problem.NotFound("experiment not found", r.URL.Path))
+		exp, ok := getExperimentOr404(em, w, r)
+		if !ok {
 			return
 		}
 
@@ -216,7 +200,7 @@ func handleLifecycleTransition(em ExperimentManager, target string, allowedFrom 
 		}
 
 		exp.Status = target
-		updated, err := em.UpdateExperiment(r.Context(), tenantID, exp)
+		updated, err := em.UpdateExperiment(r.Context(), tenantFromContext(r), exp)
 		if err != nil {
 			problem.Write(w, problem.InternalError(err.Error(), r.URL.Path))
 			return
@@ -226,6 +210,22 @@ func handleLifecycleTransition(em ExperimentManager, target string, allowedFrom 
 		w.Header().Set(headerContentType, contentTypeJSON)
 		_ = json.NewEncoder(w).Encode(resp)
 	}
+}
+
+func getExperimentOr404(em ExperimentManager, w http.ResponseWriter, r *http.Request) (*pb.Experiment, bool) {
+	tenantID := tenantFromContext(r)
+	experimentKey := r.PathValue("experimentKey")
+
+	exp, err := em.GetExperiment(r.Context(), tenantID, experimentKey)
+	if err != nil {
+		problem.Write(w, problem.InternalError(err.Error(), r.URL.Path))
+		return nil, false
+	}
+	if exp == nil {
+		problem.Write(w, problem.NotFound("experiment not found", r.URL.Path))
+		return nil, false
+	}
+	return exp, true
 }
 
 func isAllowedTransition(current string, allowed []string) bool {
