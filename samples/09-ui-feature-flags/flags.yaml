@@ -1,0 +1,62 @@
+flags:
+  - key: dark_mode
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Toggle dark theme across the entire UI"
+    rules:
+      - conditions:
+          - attribute: attributes.theme_preference
+            operator: equals
+            valueJson: '"dark"'
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
+
+  - key: hero_banner
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Promotional hero banner variant"
+    rules:
+      - conditions: []
+        rolloutPercentage: 100
+        variant: "summer_sale"
+    defaultResult:
+      enabled: true
+      variant: "default"
+
+  - key: new_navigation
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "New sidebar navigation layout"
+    rules:
+      - conditions: []
+        rolloutPercentage: 50
+    defaultResult:
+      enabled: false
+
+  - key: cta_experiment
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "A/B/C test for call-to-action button"
+    rules:
+      - conditions: []
+        rolloutPercentage: 34
+        variant: "bold"
+      - conditions: []
+        rolloutPercentage: 34
+        variant: "minimal"
+    defaultResult:
+      enabled: true
+      variant: "classic"
+
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Show maintenance overlay"
+    defaultResult:
+      enabled: false

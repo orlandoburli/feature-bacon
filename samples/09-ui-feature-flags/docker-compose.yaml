@@ -1,0 +1,34 @@
+services:
+  bacon:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.core
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./flags.yaml:/etc/bacon/flags.yaml:ro
+    environment:
+      BACON_MODE: sidecar
+      BACON_PERSISTENCE: file
+      BACON_CONFIG_FILE: /etc/bacon/flags.yaml
+      BACON_HTTP_ADDR: ":8080"
+      BACON_AUTH_ENABLED: "false"
+      BACON_LOG_FORMAT: text
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ../../
+      dockerfile: samples/09-ui-feature-flags/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      BACON_URL: http://bacon:8080
+      ENVIRONMENT: production
+    depends_on:
+      bacon:
+        condition: service_healthy
