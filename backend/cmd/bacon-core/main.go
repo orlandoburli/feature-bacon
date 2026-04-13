@@ -7,15 +7,18 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	baconapi "github.com/orlandoburli/feature-bacon/internal/api"
+	"github.com/orlandoburli/feature-bacon/internal/api/handlers"
 	"github.com/orlandoburli/feature-bacon/internal/auth"
 	"github.com/orlandoburli/feature-bacon/internal/config"
 	"github.com/orlandoburli/feature-bacon/internal/configfile"
 	"github.com/orlandoburli/feature-bacon/internal/engine"
 	"github.com/orlandoburli/feature-bacon/internal/grpcclient"
+	"github.com/orlandoburli/feature-bacon/internal/publisher"
 	"github.com/orlandoburli/feature-bacon/internal/tlsutil"
 )
 
@@ -30,6 +33,9 @@ func main() {
 		assignments engine.AssignmentStore
 		fileStore   *configfile.Store
 		grpcPersist *grpcclient.PersistenceClient
+		flagMgr     handlers.FlagManager
+		expMgr      handlers.ExperimentManager
+		apiKeyMgr   handlers.APIKeyManager
 	)
 
 	switch cfg.Persistence {
@@ -66,6 +72,26 @@ func main() {
 		store = grpcPersist
 		assignments = grpcPersist
 		slog.Info("connected to persistence module", "addr", cfg.PersistenceAddr)
+
+		var publishers []publisher.Publisher
+		for _, addr := range strings.Split(cfg.PublisherAddrs, ",") {
+			addr = strings.TrimSpace(addr)
+			if addr == "" {
+				continue
+			}
+			pConn, pErr := grpcclient.Dial(addr, tc)
+			if pErr != nil {
+				slog.Error("failed to connect to publisher", "addr", addr, "error", pErr)
+				os.Exit(1)
+			}
+			publishers = append(publishers, grpcclient.NewPublisherClient(pConn))
+			slog.Info("connected to publisher module", "addr", addr)
+		}
+		fanout := publisher.NewFanout(publishers...)
+
+		flagMgr = handlers.NewPublishingFlagManager(grpcclient.NewFlagManagerAdapter(grpcPersist), fanout)
+		expMgr = handlers.NewPublishingExperimentManager(grpcclient.NewExperimentManagerAdapter(grpcPersist), fanout)
+		apiKeyMgr = grpcclient.NewAPIKeyManagerAdapter(grpcPersist)
 	default:
 		slog.Error("unsupported persistence type", "persistence", cfg.Persistence)
 		os.Exit(1)
@@ -96,11 +122,14 @@ func main() {
 
 	eng := engine.New(store, assignments)
 	router := baconapi.NewRouter(baconapi.RouterConfig{
-		Engine:       eng,
-		AuthDisabled: !cfg.AuthEnabled,
-		KeyStore:     keyStore,
-		JWTValidator: jwtValidator,
-		JWTEnabled:   jwtEnabled,
+		Engine:            eng,
+		AuthDisabled:      !cfg.AuthEnabled,
+		KeyStore:          keyStore,
+		JWTValidator:      jwtValidator,
+		JWTEnabled:        jwtEnabled,
+		FlagManager:       flagMgr,
+		ExperimentManager: expMgr,
+		APIKeyManager:     apiKeyMgr,
 	})
 
 	srv := &http.Server{
