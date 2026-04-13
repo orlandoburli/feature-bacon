@@ -215,7 +215,7 @@ jobs:
 
       - name: Test Java sample
         working-directory: samples/08-sdk-java
-        run: mvn verify
+        run: mvn verify dependency:copy-dependencies
 
       # --- SonarCloud ---
       - uses: ./.github/actions/sonar-onboard
