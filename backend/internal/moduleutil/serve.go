@@ -64,6 +64,14 @@ func ListenAndServe(ctx context.Context, srv *grpc.Server, addr string) error {
 	return nil
 }
 
+func ServeModule(ctx context.Context, addr string, register RegisterFunc) error {
+	srv, err := NewGRPCServer(register)
+	if err != nil {
+		return err
+	}
+	return ListenAndServe(ctx, srv, addr)
+}
+
 func EnvOrDefault(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

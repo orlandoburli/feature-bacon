@@ -106,3 +106,19 @@ func TestListenAndServe_InvalidAddr(t *testing.T) {
 		t.Error("expected error with invalid address")
 	}
 }
+
+func TestServeModule(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	registered := false
+	err := ServeModule(ctx, "127.0.0.1:0", func(s *grpc.Server) {
+		registered = true
+	})
+	if err != nil {
+		t.Fatalf(fmtUnexpectedErr, err)
+	}
+	if !registered {
+		t.Error("register func was not called")
+	}
+}

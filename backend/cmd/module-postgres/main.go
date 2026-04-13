@@ -15,7 +15,6 @@ import (
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
 	"github.com/orlandoburli/feature-bacon/internal/moduleutil"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/migrations"
-	"github.com/orlandoburli/feature-bacon/modules/postgres/server"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/store"
 )
 
@@ -51,21 +50,14 @@ func main() {
 	}
 
 	st := store.New(db)
-	srv := server.New(st)
-
-	grpcServer, err := moduleutil.NewGRPCServer(func(s *grpc.Server) {
-		pb.RegisterPersistenceServiceServer(s, srv)
-	})
-	if err != nil {
-		slog.Error("failed to create gRPC server", "error", err)
-		os.Exit(1)
-	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	if err := moduleutil.ListenAndServe(ctx, grpcServer, addr); err != nil {
-		slog.Error("failed to listen", "error", err, "addr", addr)
+	if err := moduleutil.ServeModule(ctx, addr, func(s *grpc.Server) {
+		pb.RegisterPersistenceServiceServer(s, st)
+	}); err != nil {
+		slog.Error("module failed", "error", err)
 		os.Exit(1)
 	}
 }
