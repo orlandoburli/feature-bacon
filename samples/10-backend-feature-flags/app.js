@@ -84,6 +84,171 @@ function searchFuzzy(products, query) {
   });
 }
 
+function escapeHtml(str) {
+  return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+    .replaceAll(/: "([^"]*)"/g, ': <span class="str">"$1"</span>')
+    .replaceAll(': true', ': <span class="bool-true">true</span>')
+    .replaceAll(': false', ': <span class="bool-false">false</span>')
+    .replaceAll(': null', ': <span class="null">null</span>')
+    .replaceAll(/: (-?\d+\.?\d*)/g, ': <span class="num">$1</span>');
+}
+
+function badgeClass(flag) {
+  if (!flag.enabled) return 'badge-red';
+  const defaults = ['standard', 'v1_exact', 'strict', 'conservative'];
+  if (defaults.includes(flag.variant)) return 'badge-yellow';
+  return 'badge-green';
+}
+
+function renderBadges(flags) {
+  return FLAG_KEYS.map(k => {
+    const f = flags[k];
+    const val = f.variant || (f.enabled ? 'on' : 'off');
+    const cls = badgeClass(f);
+    return `<span class="badge ${cls}"><span class="dot"></span>${escapeHtml(k)}: ${escapeHtml(val)}</span>`;
+  }).join('\n      ');
+}
+
+function renderPricingCard(pricingAlg, samplePrices) {
+  let indicatorClass;
+  if (pricingAlg === 'standard') indicatorClass = 'indicator-yellow';
+  else if (pricingAlg === 'dynamic') indicatorClass = 'indicator-blue';
+  else indicatorClass = 'indicator-green';
+
+  let multiplier;
+  if (pricingAlg === 'dynamic') multiplier = 'time-based';
+  else if (pricingAlg === 'volume_discount') multiplier = '0.8x';
+  else multiplier = '1.0x';
+
+  let compare;
+  if (pricingAlg === 'volume_discount') compare = '<strong>Enterprise</strong> gets 20% volume discounts';
+  else if (pricingAlg === 'dynamic') compare = '<strong>Dynamic</strong> pricing varies by time of day';
+  else compare = 'Other users may see <strong>dynamic</strong> or <strong>volume_discount</strong> pricing';
+
+  const escaped = escapeHtml(pricingAlg);
+  return `<div class="card">
+      <div class="card-header">
+        <div><h3>Pricing Engine</h3><span class="flag-name">pricing_algorithm</span></div>
+        <span class="indicator ${indicatorClass}">${escaped}</span>
+      </div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">Algorithm</span><span class="stat-value">${escaped}</span></div>
+        <div class="stat-row"><span class="stat-label">Multiplier</span><span class="stat-value">${escapeHtml(multiplier)}</span></div>
+        <div class="try-it">
+          <div class="try-it-label">GET /api/products &mdash; sample</div>
+          <pre class="json">${syntaxHighlight(JSON.stringify({ algorithm: pricingAlg, products: samplePrices }, null, 2))}</pre>
+        </div>
+        <div class="compare">${compare}</div>
+      </div>
+    </div>`;
+}
+
+function renderSearchCard(searchVer, sampleSearch) {
+  const escaped = escapeHtml(searchVer);
+  const indicatorClass = searchVer === 'v2_fuzzy' ? 'indicator-green' : 'indicator-yellow';
+  const algorithm = searchVer === 'v2_fuzzy' ? 'Fuzzy (case-insensitive, partial)' : 'Exact (substring match)';
+  const compare = searchVer === 'v2_fuzzy'
+    ? '<strong>v2_fuzzy</strong> matches partial words and subsequences'
+    : '50% of users see <strong>v2_fuzzy</strong> with smarter matching';
+
+  return `<div class="card">
+      <div class="card-header">
+        <div><h3>Search Engine</h3><span class="flag-name">search_version</span></div>
+        <span class="indicator ${indicatorClass}">${escaped}</span>
+      </div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">Algorithm</span><span class="stat-value">${algorithm}</span></div>
+        <div class="stat-row"><span class="stat-label">Query</span><span class="stat-value">"wid"</span></div>
+        <div class="try-it">
+          <div class="try-it-label">GET /api/search?q=wid &mdash; sample</div>
+          <pre class="json">${syntaxHighlight(JSON.stringify({ version: searchVer, query: 'wid', results: sampleSearch.map(p => ({ id: p.id, name: p.name })) }, null, 2))}</pre>
+        </div>
+        <div class="compare">${compare}</div>
+      </div>
+    </div>`;
+}
+
+function renderRateLimitCard(rateLimit, rateCfg) {
+  const escaped = escapeHtml(rateLimit);
+  const indicatorClass = rateLimit === 'relaxed' ? 'indicator-green' : 'indicator-yellow';
+  const compare = rateLimit === 'relaxed'
+    ? '<strong>Premium</strong> users enjoy 10x higher limits'
+    : '<strong>Premium</strong> users get <strong>relaxed</strong> limits (1000 req/min)';
+
+  return `<div class="card">
+      <div class="card-header">
+        <div><h3>Rate Limiting</h3><span class="flag-name">rate_limit</span></div>
+        <span class="indicator ${indicatorClass}">${escaped}</span>
+      </div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">Requests</span><span class="stat-value">${escapeHtml(rateCfg.requests)} / ${escapeHtml(rateCfg.window)}</span></div>
+        <div class="stat-row"><span class="stat-label">Burst</span><span class="stat-value">${escapeHtml(rateCfg.burst)}</span></div>
+        <div class="stat-row"><span class="stat-label">Strategy</span><span class="stat-value">${escaped}</span></div>
+        <div class="try-it">
+          <div class="try-it-label">Active rate limit config</div>
+          <pre class="json">${syntaxHighlight(JSON.stringify({ strategy: rateLimit, ...rateCfg }, null, 2))}</pre>
+        </div>
+        <div class="compare">${compare}</div>
+      </div>
+    </div>`;
+}
+
+function renderCacheCard(cacheStrat, cacheCfg) {
+  const escaped = escapeHtml(cacheStrat);
+  const indicatorClass = cacheStrat === 'aggressive' ? 'indicator-green' : 'indicator-yellow';
+  const compare = cacheStrat === 'aggressive'
+    ? '<strong>Aggressive</strong> caching: 5min TTL with stale-while-revalidate'
+    : '40% of users get <strong>aggressive</strong> caching (5x longer TTL)';
+
+  return `<div class="card">
+      <div class="card-header">
+        <div><h3>Cache Strategy</h3><span class="flag-name">cache_strategy</span></div>
+        <span class="indicator ${indicatorClass}">${escaped}</span>
+      </div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">TTL</span><span class="stat-value">${escapeHtml(cacheCfg.ttl)}s</span></div>
+        <div class="stat-row"><span class="stat-label">Max Size</span><span class="stat-value">${escapeHtml(cacheCfg.maxSize)}</span></div>
+        <div class="stat-row"><span class="stat-label">Stale-While-Revalidate</span><span class="stat-value">${escapeHtml(cacheCfg.staleWhileRevalidate)}</span></div>
+        <div class="try-it">
+          <div class="try-it-label">Active cache config</div>
+          <pre class="json">${syntaxHighlight(JSON.stringify({ strategy: cacheStrat, ...cacheCfg }, null, 2))}</pre>
+        </div>
+        <div class="compare">${compare}</div>
+      </div>
+    </div>`;
+}
+
+function renderPremiumCard(premiumEnabled) {
+  const premiumSample = premiumEnabled
+    ? syntaxHighlight(JSON.stringify({ totalOrders: 1284, revenue: 48210.5, topProduct: 'Enterprise Suite', conversionRate: 0.032, period: 'last_30_days' }, null, 2))
+    : syntaxHighlight(JSON.stringify({ error: 'Premium API access required', hint: 'Upgrade to premium or enterprise plan' }, null, 2));
+  const compare = premiumEnabled
+    ? '<strong>Premium/Enterprise</strong> users can access analytics data'
+    : 'Upgrade to <strong>premium</strong> or <strong>enterprise</strong> to unlock this endpoint';
+
+  return `<div class="card">
+      <div class="card-header">
+        <div><h3>Premium API</h3><span class="flag-name">premium_api</span></div>
+        <span class="indicator ${premiumEnabled ? 'indicator-green' : 'indicator-red'}">${premiumEnabled ? 'enabled' : 'disabled'}</span>
+      </div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">Access</span><span class="stat-value">${premiumEnabled ? 'Granted' : 'Denied'}</span></div>
+        <div class="stat-row"><span class="stat-label">Endpoint</span><span class="stat-value">/api/premium/analytics</span></div>
+        <div class="try-it">
+          <div class="try-it-label">GET /api/premium/analytics</div>
+          <pre class="json">${premiumSample}</pre>
+        </div>
+        <div class="compare">${compare}</div>
+      </div>
+    </div>`;
+}
+
 app.get('/api/products', async (req, res) => {
   const ctx = userContext(req);
   try {
@@ -243,105 +408,26 @@ app.get('/', async (req, res) => {
     <a href="/?user=free_user&plan=free" class="free${plan === 'free' ? ' active' : ''}">Free User</a>
     <a href="/?user=premium_user&plan=premium" class="premium${plan === 'premium' ? ' active' : ''}">Premium User</a>
     <a href="/?user=enterprise_user&plan=enterprise" class="enterprise${plan === 'enterprise' ? ' active' : ''}">Enterprise User</a>
-    <span style="margin-left:0.5rem;color:#484f58">Current: <strong style="color:#e1e4e8">${user}</strong> (${plan})</span>
+    <span style="margin-left:0.5rem;color:#484f58">Current: <strong style="color:#e1e4e8">${escapeHtml(user)}</strong> (${escapeHtml(plan)})</span>
   </div>
 
   <div class="config-panel">
     <h2>&#9881; Active Configuration</h2>
     <div class="badges">
-      ${FLAG_KEYS.map(k => {
-        const f = flags[k];
-        const val = f.variant || (f.enabled ? 'on' : 'off');
-        const cls = !f.enabled ? 'badge-red' : (f.variant === 'standard' || f.variant === 'v1_exact' || f.variant === 'strict' || f.variant === 'conservative' ? 'badge-yellow' : 'badge-green');
-        return `<span class="badge ${cls}"><span class="dot"></span>${k}: ${val}</span>`;
-      }).join('\n      ')}
+      ${renderBadges(flags)}
     </div>
   </div>
 
   <div class="grid">
-    <div class="card">
-      <div class="card-header">
-        <div><h3>Pricing Engine</h3><span class="flag-name">pricing_algorithm</span></div>
-        <span class="indicator ${pricingAlg === 'standard' ? 'indicator-yellow' : pricingAlg === 'dynamic' ? 'indicator-blue' : 'indicator-green'}">${pricingAlg}</span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat-label">Algorithm</span><span class="stat-value">${pricingAlg}</span></div>
-        <div class="stat-row"><span class="stat-label">Multiplier</span><span class="stat-value">${pricingAlg === 'dynamic' ? 'time-based' : pricingAlg === 'volume_discount' ? '0.8x' : '1.0x'}</span></div>
-        <div class="try-it">
-          <div class="try-it-label">GET /api/products &mdash; sample</div>
-          <pre class="json">${syntaxHighlight(JSON.stringify({ algorithm: pricingAlg, products: samplePrices }, null, 2))}</pre>
-        </div>
-        <div class="compare">${pricingAlg === 'volume_discount' ? '<strong>Enterprise</strong> gets 20% volume discounts' : pricingAlg === 'dynamic' ? '<strong>Dynamic</strong> pricing varies by time of day' : 'Other users may see <strong>dynamic</strong> or <strong>volume_discount</strong> pricing'}</div>
-      </div>
-    </div>
+    ${renderPricingCard(pricingAlg, samplePrices)}
 
-    <div class="card">
-      <div class="card-header">
-        <div><h3>Search Engine</h3><span class="flag-name">search_version</span></div>
-        <span class="indicator ${searchVer === 'v2_fuzzy' ? 'indicator-green' : 'indicator-yellow'}">${searchVer}</span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat-label">Algorithm</span><span class="stat-value">${searchVer === 'v2_fuzzy' ? 'Fuzzy (case-insensitive, partial)' : 'Exact (substring match)'}</span></div>
-        <div class="stat-row"><span class="stat-label">Query</span><span class="stat-value">"wid"</span></div>
-        <div class="try-it">
-          <div class="try-it-label">GET /api/search?q=wid &mdash; sample</div>
-          <pre class="json">${syntaxHighlight(JSON.stringify({ version: searchVer, query: 'wid', results: sampleSearch.map(p => ({ id: p.id, name: p.name })) }, null, 2))}</pre>
-        </div>
-        <div class="compare">${searchVer === 'v2_fuzzy' ? '<strong>v2_fuzzy</strong> matches partial words and subsequences' : '50% of users see <strong>v2_fuzzy</strong> with smarter matching'}</div>
-      </div>
-    </div>
+    ${renderSearchCard(searchVer, sampleSearch)}
 
-    <div class="card">
-      <div class="card-header">
-        <div><h3>Rate Limiting</h3><span class="flag-name">rate_limit</span></div>
-        <span class="indicator ${rateLimit === 'relaxed' ? 'indicator-green' : 'indicator-yellow'}">${rateLimit}</span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat-label">Requests</span><span class="stat-value">${rateCfg.requests} / ${rateCfg.window}</span></div>
-        <div class="stat-row"><span class="stat-label">Burst</span><span class="stat-value">${rateCfg.burst}</span></div>
-        <div class="stat-row"><span class="stat-label">Strategy</span><span class="stat-value">${rateLimit}</span></div>
-        <div class="try-it">
-          <div class="try-it-label">Active rate limit config</div>
-          <pre class="json">${syntaxHighlight(JSON.stringify({ strategy: rateLimit, ...rateCfg }, null, 2))}</pre>
-        </div>
-        <div class="compare">${rateLimit === 'relaxed' ? '<strong>Premium</strong> users enjoy 10x higher limits' : '<strong>Premium</strong> users get <strong>relaxed</strong> limits (1000 req/min)'}</div>
-      </div>
-    </div>
+    ${renderRateLimitCard(rateLimit, rateCfg)}
 
-    <div class="card">
-      <div class="card-header">
-        <div><h3>Cache Strategy</h3><span class="flag-name">cache_strategy</span></div>
-        <span class="indicator ${cacheStrat === 'aggressive' ? 'indicator-green' : 'indicator-yellow'}">${cacheStrat}</span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat-label">TTL</span><span class="stat-value">${cacheCfg.ttl}s</span></div>
-        <div class="stat-row"><span class="stat-label">Max Size</span><span class="stat-value">${cacheCfg.maxSize}</span></div>
-        <div class="stat-row"><span class="stat-label">Stale-While-Revalidate</span><span class="stat-value">${cacheCfg.staleWhileRevalidate}</span></div>
-        <div class="try-it">
-          <div class="try-it-label">Active cache config</div>
-          <pre class="json">${syntaxHighlight(JSON.stringify({ strategy: cacheStrat, ...cacheCfg }, null, 2))}</pre>
-        </div>
-        <div class="compare">${cacheStrat === 'aggressive' ? '<strong>Aggressive</strong> caching: 5min TTL with stale-while-revalidate' : '40% of users get <strong>aggressive</strong> caching (5x longer TTL)'}</div>
-      </div>
-    </div>
+    ${renderCacheCard(cacheStrat, cacheCfg)}
 
-    <div class="card">
-      <div class="card-header">
-        <div><h3>Premium API</h3><span class="flag-name">premium_api</span></div>
-        <span class="indicator ${premiumEnabled ? 'indicator-green' : 'indicator-red'}">${premiumEnabled ? 'enabled' : 'disabled'}</span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat-label">Access</span><span class="stat-value">${premiumEnabled ? 'Granted' : 'Denied'}</span></div>
-        <div class="stat-row"><span class="stat-label">Endpoint</span><span class="stat-value">/api/premium/analytics</span></div>
-        <div class="try-it">
-          <div class="try-it-label">GET /api/premium/analytics</div>
-          <pre class="json">${premiumEnabled
-            ? syntaxHighlight(JSON.stringify({ totalOrders: 1284, revenue: 48210.5, topProduct: 'Enterprise Suite', conversionRate: 0.032, period: 'last_30_days' }, null, 2))
-            : syntaxHighlight(JSON.stringify({ error: 'Premium API access required', hint: 'Upgrade to premium or enterprise plan' }, null, 2))}</pre>
-        </div>
-        <div class="compare">${premiumEnabled ? '<strong>Premium/Enterprise</strong> users can access analytics data' : 'Upgrade to <strong>premium</strong> or <strong>enterprise</strong> to unlock this endpoint'}</div>
-      </div>
-    </div>
+    ${renderPremiumCard(premiumEnabled)}
   </div>
 
   <footer>Feature Bacon &mdash; Backend Feature Flags Demo</footer>
@@ -349,17 +435,6 @@ app.get('/', async (req, res) => {
 </body>
 </html>`);
 });
-
-function syntaxHighlight(json) {
-  return json
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
-    .replace(/: "([^"]*)"/g, ': <span class="str">"$1"</span>')
-    .replace(/: (true)/g, ': <span class="bool-true">$1</span>')
-    .replace(/: (false)/g, ': <span class="bool-false">$1</span>')
-    .replace(/: (null)/g, ': <span class="null">$1</span>')
-    .replace(/: (-?\d+\.?\d*)/g, ': <span class="num">$1</span>');
-}
 
 /* istanbul ignore next -- startup guard */
 if (require.main === module) {

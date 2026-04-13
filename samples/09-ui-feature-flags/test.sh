@@ -13,19 +13,19 @@ echo ""
 echo "2. HTML page for visitor (default user)"
 STATUS=$(curl -so /dev/null -w "%{http_code}" "$BASE_URL/")
 echo "  GET / => HTTP $STATUS"
-[ "$STATUS" = "200" ] && echo "  PASS" || { echo "  FAIL"; exit 1; }
+[[ "$STATUS" == "200" ]] && echo "  PASS" || { echo "  FAIL"; exit 1; }
 echo ""
 
 echo "3. HTML page for alice (dark mode user)"
 STATUS=$(curl -so /dev/null -w "%{http_code}" "$BASE_URL/?user=alice")
 echo "  GET /?user=alice => HTTP $STATUS"
-[ "$STATUS" = "200" ] && echo "  PASS" || { echo "  FAIL"; exit 1; }
+[[ "$STATUS" == "200" ]] && echo "  PASS" || { echo "  FAIL"; exit 1; }
 echo ""
 
 echo "4. HTML page for bob"
 STATUS=$(curl -so /dev/null -w "%{http_code}" "$BASE_URL/?user=bob")
 echo "  GET /?user=bob => HTTP $STATUS"
-[ "$STATUS" = "200" ] && echo "  PASS" || { echo "  FAIL"; exit 1; }
+[[ "$STATUS" == "200" ]] && echo "  PASS" || { echo "  FAIL"; exit 1; }
 echo ""
 
 echo "5. API flags (JSON) for visitor"

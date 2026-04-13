@@ -11,6 +11,15 @@ const client = new BaconClient(baconUrl, { apiKey });
 
 const FLAG_KEYS = ['dark_mode', 'hero_banner', 'new_navigation', 'cta_experiment', 'maintenance_mode'];
 
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function userContext(req) {
   const user = req.query.user || 'visitor';
   return {
@@ -48,23 +57,25 @@ function renderCtaButton(variant) {
     minimal: 'Get started',
     classic: 'Get Started Free',
   };
-  const cls = styles[variant] || styles.classic;
-  const label = labels[variant] || labels.classic;
+  const cls = escapeHtml(styles[variant] || styles.classic);
+  const label = escapeHtml(labels[variant] || labels.classic);
   return `<button class="${cls}">${label}</button>`;
 }
 
 function renderNavigation(isSidebar, currentUser) {
   const users = ['alice', 'bob', 'visitor'];
+  const safeUser = escapeHtml(currentUser);
   const userLinks = users.map(u => {
     const active = u === currentUser ? ' class="active"' : '';
-    return `<a href="?user=${u}"${active}>${u}</a>`;
+    const safeU = escapeHtml(u);
+    return `<a href="?user=${safeU}"${active}>${safeU}</a>`;
   }).join('');
 
   const navItems = `
-    <a href="?user=${currentUser}">Dashboard</a>
-    <a href="?user=${currentUser}">Products</a>
-    <a href="?user=${currentUser}">Analytics</a>
-    <a href="?user=${currentUser}">Settings</a>`;
+    <a href="?user=${safeUser}">Dashboard</a>
+    <a href="?user=${safeUser}">Products</a>
+    <a href="?user=${safeUser}">Analytics</a>
+    <a href="?user=${safeUser}">Settings</a>`;
 
   if (isSidebar) {
     return `
@@ -88,11 +99,13 @@ function renderNavigation(isSidebar, currentUser) {
 function renderFlagPanel(flags) {
   const rows = Object.entries(flags).map(([key, val]) => {
     const dot = val.enabled ? 'dot dot--on' : 'dot dot--off';
-    const variant = val.variant ? `<span class="flag-variant">${val.variant}</span>` : '';
+    const variant = val.variant
+      ? `<span class="flag-variant">${escapeHtml(val.variant)}</span>`
+      : '';
     return `
       <div class="flag-row">
         <span class="${dot}"></span>
-        <span class="flag-key">${key}</span>
+        <span class="flag-key">${escapeHtml(key)}</span>
         ${variant}
       </div>`;
   }).join('');
@@ -359,7 +372,7 @@ function renderPage(flags, currentUser) {
       <div class="header">
         <h1>UI Feature Flags Demo</h1>
         <p>This page is controlled by Feature Bacon feature flags</p>
-        <span class="user-badge">User: ${currentUser}</span>
+        <span class="user-badge">User: ${escapeHtml(currentUser)}</span>
       </div>
 
       ${renderHeroBanner(heroVariant)}
@@ -386,7 +399,7 @@ app.get('/', async (req, res) => {
     });
     res.type('html').send(renderPage(flags, ctx.subjectId));
   } catch (err) {
-    res.status(500).send(`<h1>Error</h1><p>${err.message}</p>`);
+    res.status(500).send(`<h1>Error</h1><p>${escapeHtml(err.message)}</p>`);
   }
 });
 
