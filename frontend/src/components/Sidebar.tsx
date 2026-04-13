@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Flag, FlaskConical, Key, Activity, LayoutDashboard, Flame, Menu, X } from 'lucide-react';
+import { Flag, FlaskConical, Key, Activity, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { Logo } from './Logo';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -18,7 +19,7 @@ function NavContent({ pathname, onItemClick }: { pathname: string; onItemClick?:
   return (
     <>
       <div className="flex h-14 items-center gap-2.5 border-b border-zinc-200 px-5 dark:border-zinc-800">
-        <Flame className="h-6 w-6 text-orange-500" />
+        <Logo size={28} />
         <span className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
           Feature Bacon
         </span>

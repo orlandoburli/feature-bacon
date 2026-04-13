@@ -22,8 +22,38 @@
   "links": [],
   "panels": [
     {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div style=\"display:flex;align-items:center;gap:16px;padding:8px 0\"><img src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSJub25lIj48ZyB0cmFuc2Zvcm09InJvdGF0ZSgtMiAyNTYgMTYxKSI+PHJlY3QgeD0iNTYiIHk9IjEyOCIgd2lkdGg9IjQwMCIgaGVpZ2h0PSI2NiIgcng9IjMzIiBmaWxsPSIjREMyNjI2Ii8+PHJlY3QgeD0iOTIiIHk9IjEzNiIgd2lkdGg9IjMyOCIgaGVpZ2h0PSIxMCIgcng9IjUiIGZpbGw9IiNGRUUyRTIiLz48cmVjdCB4PSIzODIiIHk9IjE0OSIgd2lkdGg9IjQ2IiBoZWlnaHQ9IjI0IiByeD0iMTIiIGZpbGw9IiMyMkM1NUUiLz48Y2lyY2xlIGN4PSI0MTYiIGN5PSIxNjEiIHI9IjgiIGZpbGw9IiNmZmYiLz48L2c+PGcgdHJhbnNmb3JtPSJyb3RhdGUoMC44IDI1NiAyNTYpIj48cmVjdCB4PSI1NiIgeT0iMjIzIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjY2IiByeD0iMzMiIGZpbGw9IiNEQzI2MjYiLz48cmVjdCB4PSI5MiIgeT0iMjMxIiB3aWR0aD0iMzI4IiBoZWlnaHQ9IjEwIiByeD0iNSIgZmlsbD0iI0ZFRTJFMiIvPjxyZWN0IHg9IjM4MiIgeT0iMjQ0IiB3aWR0aD0iNDYiIGhlaWdodD0iMjQiIHJ4PSIxMiIgZmlsbD0iIzIyQzU1RSIvPjxjaXJjbGUgY3g9IjQxNiIgY3k9IjI1NiIgcj0iOCIgZmlsbD0iI2ZmZiIvPjwvZz48ZyB0cmFuc2Zvcm09InJvdGF0ZSgyLjUgMjU2IDM1MSkiPjxyZWN0IHg9IjU2IiB5PSIzMTgiIHdpZHRoPSI0MDAiIGhlaWdodD0iNjYiIHJ4PSIzMyIgZmlsbD0iI0RDMjYyNiIgb3BhY2l0eT0iMC4yNSIvPjxyZWN0IHg9IjkyIiB5PSIzMjYiIHdpZHRoPSIzMjgiIGhlaWdodD0iMTAiIHJ4PSI1IiBmaWxsPSIjRkVFMkUyIiBvcGFjaXR5PSIwLjI1Ii8+PHJlY3QgeD0iODIiIHk9IjMzOSIgd2lkdGg9IjQ2IiBoZWlnaHQ9IjI0IiByeD0iMTIiIGZpbGw9IiM5Q0EzQUYiLz48Y2lyY2xlIGN4PSI5NCIgY3k9IjM1MSIgcj0iOCIgZmlsbD0iI2ZmZiIvPjwvZz48L3N2Zz4=\" width=\"48\" height=\"48\" alt=\"Feature Bacon\"/><div><span style=\"font-size:20px;font-weight:700\">System Health</span><br/><span style=\"font-size:13px;color:#888\">Powered by Feature Bacon</span></div></div>",
+        "mode": "html"
+      },
+      "transparent": true,
+      "title": "",
+      "type": "text"
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
       "id": 1,
       "title": "Overview",
       "type": "row"
@@ -37,7 +67,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 4
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_http_requests_total{instance=~\"$instance\"}[5m]))",
@@ -54,9 +89,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1000 },
-              { "color": "red", "value": 5000 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
             ]
           },
           "mappings": []
@@ -65,7 +109,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -86,7 +132,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 4
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_http_requests_total{status=~\"5..\", instance=~\"$instance\"}[5m])) / sum(rate(bacon_http_requests_total{instance=~\"$instance\"}[5m])) * 100",
@@ -103,9 +154,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 5 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
             ]
           },
           "mappings": []
@@ -114,7 +174,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -135,7 +197,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 4
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(bacon_http_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le))",
@@ -152,9 +219,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 100 },
-              { "color": "red", "value": 500 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
             ]
           },
           "mappings": []
@@ -163,7 +239,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -184,7 +262,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
       "targets": [
         {
           "expr": "count(count by (path) (bacon_http_requests_total{instance=~\"$instance\"}))",
@@ -201,7 +284,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "blue", "value": null }
+              {
+                "color": "blue",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -210,7 +296,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -224,7 +312,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
       "id": 6,
       "title": "HTTP Traffic",
       "type": "row"
@@ -238,7 +331,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_http_requests_total{instance=~\"$instance\"}[5m])) by (status)",
@@ -271,53 +369,99 @@
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "normal"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
         },
         "overrides": [
           {
-            "matcher": { "id": "byRegexp", "options": "^2\\d{2}$" },
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^2\\d{2}$"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "^3\\d{2}$" },
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^3\\d{2}$"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "^4\\d{2}$" },
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^4\\d{2}$"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byRegexp", "options": "^5\\d{2}$" },
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^5\\d{2}$"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -337,7 +481,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
       "targets": [
         {
           "expr": "topk(10, sum(rate(bacon_http_requests_total{instance=~\"$instance\"}[5m])) by (path))",
@@ -370,19 +519,26 @@
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -391,7 +547,10 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -411,7 +570,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.5, sum(rate(bacon_http_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le))",
@@ -454,47 +618,84 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "P50" },
+            "matcher": {
+              "id": "byName",
+              "options": "P50"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "P95" },
+            "matcher": {
+              "id": "byName",
+              "options": "P95"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "P99" },
+            "matcher": {
+              "id": "byName",
+              "options": "P99"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -507,7 +708,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
       "id": 10,
       "title": "Endpoints Detail",
       "type": "row"
@@ -521,7 +727,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
       "targets": [
         {
           "expr": "topk(10, sum(rate(bacon_http_requests_total{instance=~\"$instance\"}[5m])) by (path))",
@@ -539,9 +750,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 100 },
-              { "color": "red", "value": 500 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
             ]
           },
           "mappings": []
@@ -550,7 +770,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -572,7 +794,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(bacon_http_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, path))",
@@ -591,30 +818,56 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.1 },
-              { "color": "red", "value": 0.5 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
             ]
           },
           "mappings": [],
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "path" },
+            "matcher": {
+              "id": "byName",
+              "options": "path"
+            },
             "properties": [
-              { "id": "custom.width", "value": 300 }
+              {
+                "id": "custom.width",
+                "value": 300
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Value" },
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
             "properties": [
-              { "id": "displayName", "value": "P95 Latency" },
-              { "id": "unit", "value": "s" },
+              {
+                "id": "displayName",
+                "value": "P95 Latency"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              },
               {
                 "id": "custom.cellOptions",
                 "value": {
@@ -631,12 +884,17 @@
         "cellHeight": "sm",
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "countRows": false,
           "fields": ""
         },
         "sortBy": [
-          { "displayName": "P95 Latency", "desc": true }
+          {
+            "displayName": "P95 Latency",
+            "desc": true
+          }
         ]
       },
       "transformations": [
@@ -644,7 +902,10 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": ["path", "Value"]
+              "names": [
+                "path",
+                "Value"
+              ]
             }
           }
         },
@@ -652,7 +913,10 @@
           "id": "sortBy",
           "options": {
             "sort": [
-              { "field": "Value", "desc": true }
+              {
+                "field": "Value",
+                "desc": true
+              }
             ]
           }
         }
@@ -660,7 +924,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
       "id": 13,
       "title": "gRPC Modules",
       "type": "row"
@@ -674,7 +943,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_grpc_requests_total{instance=~\"$instance\"}[5m])) by (method)",
@@ -707,19 +981,26 @@
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -728,7 +1009,10 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -748,7 +1032,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_grpc_requests_total{status!=\"OK\", instance=~\"$instance\"}[5m])) by (method, status)",
@@ -781,19 +1070,26 @@
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -802,7 +1098,10 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -815,7 +1114,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
       "id": 16,
       "title": "Errors",
       "type": "row"
@@ -829,7 +1133,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
       "targets": [
         {
           "expr": "sum(rate(bacon_http_requests_total{status=~\"4..\", instance=~\"$instance\"}[5m]))",
@@ -867,41 +1176,69 @@
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "4xx Client Errors" },
+            "matcher": {
+              "id": "byName",
+              "options": "4xx Client Errors"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "5xx Server Errors" },
+            "matcher": {
+              "id": "byName",
+              "options": "5xx Server Errors"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -921,7 +1258,12 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
       "targets": [
         {
           "expr": "sum(increase(bacon_http_requests_total{status=~\"[45]..\", instance=~\"$instance\"}[1h])) by (method, path, status)",
@@ -940,41 +1282,76 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "red", "value": 100 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
             ]
           },
           "mappings": [],
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "method" },
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
             "properties": [
-              { "id": "custom.width", "value": 80 }
+              {
+                "id": "custom.width",
+                "value": 80
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "path" },
+            "matcher": {
+              "id": "byName",
+              "options": "path"
+            },
             "properties": [
-              { "id": "custom.width", "value": 250 }
+              {
+                "id": "custom.width",
+                "value": 250
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "status" },
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
             "properties": [
-              { "id": "custom.width", "value": 80 }
+              {
+                "id": "custom.width",
+                "value": 80
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Value" },
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
             "properties": [
-              { "id": "displayName", "value": "Count" },
+              {
+                "id": "displayName",
+                "value": "Count"
+              },
               {
                 "id": "custom.cellOptions",
                 "value": {
@@ -991,12 +1368,17 @@
         "cellHeight": "sm",
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "countRows": false,
           "fields": ""
         },
         "sortBy": [
-          { "displayName": "Count", "desc": true }
+          {
+            "displayName": "Count",
+            "desc": true
+          }
         ]
       },
       "transformations": [
@@ -1004,7 +1386,12 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": ["method", "path", "status", "Value"]
+              "names": [
+                "method",
+                "path",
+                "status",
+                "Value"
+              ]
             }
           }
         },
@@ -1012,7 +1399,10 @@
           "id": "sortBy",
           "options": {
             "sort": [
-              { "field": "Value", "desc": true }
+              {
+                "field": "Value",
+                "desc": true
+              }
             ]
           }
         }
@@ -1021,14 +1411,21 @@
   ],
   "refresh": "10s",
   "schemaVersion": 39,
-  "tags": ["feature-bacon", "system-health"],
+  "tags": [
+    "feature-bacon",
+    "system-health"
+  ],
   "templating": {
     "list": [
       {
         "current": {
           "selected": true,
-          "text": ["All"],
-          "value": ["$__all"]
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": {
           "type": "prometheus",
