@@ -33,7 +33,11 @@ public class BaconClient {
     private final Duration timeout;
 
     private BaconClient(Builder builder) {
-        this.baseUrl = builder.baseUrl.replaceAll("/+$", "");
+        String url = builder.baseUrl;
+        while (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        this.baseUrl = url;
         this.apiKey = builder.apiKey;
         this.timeout = builder.timeout;
         this.httpClient = builder.httpClient != null
@@ -116,41 +120,32 @@ public class BaconClient {
     // ── HTTP helpers ────────────────────────────────────────────────
 
     private String post(String path, String jsonBody) throws BaconError {
-        try {
-            HttpRequest.Builder req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
-                    .header("Content-Type", "application/json")
-                    .timeout(timeout)
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody));
-
-            if (apiKey != null && !apiKey.isEmpty()) {
-                req.header("X-API-Key", apiKey);
-            }
-
-            HttpResponse<String> resp = httpClient.send(req.build(), HttpResponse.BodyHandlers.ofString());
-            return handleResponse(resp);
-        } catch (BaconError e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BaconError("Request failed: " + e.getMessage(), e);
-        }
+        return send(HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .timeout(timeout)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody)));
     }
 
     private String get(String path) throws BaconError {
+        return send(HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + path))
+                .timeout(timeout)
+                .GET());
+    }
+
+    private String send(HttpRequest.Builder reqBuilder) throws BaconError {
+        if (apiKey != null && !apiKey.isEmpty()) {
+            reqBuilder.header("X-API-Key", apiKey);
+        }
         try {
-            HttpRequest.Builder req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
-                    .timeout(timeout)
-                    .GET();
-
-            if (apiKey != null && !apiKey.isEmpty()) {
-                req.header("X-API-Key", apiKey);
-            }
-
-            HttpResponse<String> resp = httpClient.send(req.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             return handleResponse(resp);
         } catch (BaconError e) {
             throw e;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BaconError("Request interrupted", e);
         } catch (Exception e) {
             throw new BaconError("Request failed: " + e.getMessage(), e);
         }

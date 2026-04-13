@@ -262,24 +262,36 @@ final class JsonHelper {
         private Number parseNumber() {
             int start = pos;
             if (peek() == '-') pos++;
-            while (pos < src.length() && Character.isDigit(src.charAt(pos))) pos++;
-            boolean isFloat = false;
-            if (pos < src.length() && src.charAt(pos) == '.') {
-                isFloat = true;
-                pos++;
-                while (pos < src.length() && Character.isDigit(src.charAt(pos))) pos++;
-            }
-            if (pos < src.length() && (src.charAt(pos) == 'e' || src.charAt(pos) == 'E')) {
-                isFloat = true;
-                pos++;
-                if (pos < src.length() && (src.charAt(pos) == '+' || src.charAt(pos) == '-')) pos++;
-                while (pos < src.length() && Character.isDigit(src.charAt(pos))) pos++;
-            }
+            consumeDigits();
+            boolean isFloat = consumeFraction() | consumeExponent();
             String numStr = src.substring(start, pos);
             if (isFloat) return Double.parseDouble(numStr);
             long l = Long.parseLong(numStr);
             if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) return (int) l;
             return l;
+        }
+
+        private void consumeDigits() {
+            while (pos < src.length() && Character.isDigit(src.charAt(pos))) pos++;
+        }
+
+        private boolean consumeFraction() {
+            if (pos < src.length() && src.charAt(pos) == '.') {
+                pos++;
+                consumeDigits();
+                return true;
+            }
+            return false;
+        }
+
+        private boolean consumeExponent() {
+            if (pos < src.length() && (src.charAt(pos) == 'e' || src.charAt(pos) == 'E')) {
+                pos++;
+                if (pos < src.length() && (src.charAt(pos) == '+' || src.charAt(pos) == '-')) pos++;
+                consumeDigits();
+                return true;
+            }
+            return false;
         }
 
         private void skipWhitespace() {

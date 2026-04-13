@@ -219,6 +219,46 @@ public class BaconClientTest {
         assertTrue(c.healthy());
     }
 
+    // ── interrupt handling ──────────────────────────────────────────
+
+    @Test
+    public void testEvaluateReInterruptsOnInterruptedException() {
+        server.start();
+        EvaluationContext ctx = EvaluationContext.builder("user-1").build();
+
+        Thread.currentThread().interrupt();
+        try {
+            client.evaluate("flag", ctx);
+            fail("Expected BaconError");
+        } catch (BaconError e) {
+            assertTrue("Thread interrupt flag must be preserved", Thread.interrupted());
+        }
+    }
+
+    @Test
+    public void testHealthyReturnsFalseOnInterrupt() {
+        server.start();
+        Thread.currentThread().interrupt();
+        assertFalse(client.healthy());
+        Thread.interrupted();
+    }
+
+    // ── no API key ───────────────────────────────────────────────────
+
+    @Test
+    public void testRequestsWorkWithoutApiKey() throws Exception {
+        int port = server.getAddress().getPort();
+        BaconClient noKeyClient = BaconClient.builder("http://localhost:" + port).build();
+
+        server.createContext("/healthz", exchange -> {
+            assertNull(exchange.getRequestHeaders().getFirst("X-API-Key"));
+            respond(exchange, 200, "{\"status\":\"healthy\"}");
+        });
+        server.start();
+
+        assertTrue(noKeyClient.healthy());
+    }
+
     // ── helpers ─────────────────────────────────────────────────────
 
     private static void respond(HttpExchange exchange, int status, String body) throws IOException {
