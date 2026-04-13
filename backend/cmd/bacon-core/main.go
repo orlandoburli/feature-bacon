@@ -29,13 +29,14 @@ func main() {
 	cfg := config.Load()
 
 	var (
-		store       engine.FlagStore
-		assignments engine.AssignmentStore
-		fileStore   *configfile.Store
-		grpcPersist *grpcclient.PersistenceClient
-		flagMgr     handlers.FlagManager
-		expMgr      handlers.ExperimentManager
-		apiKeyMgr   handlers.APIKeyManager
+		store          engine.FlagStore
+		assignments    engine.AssignmentStore
+		fileStore      *configfile.Store
+		grpcPersist    *grpcclient.PersistenceClient
+		flagMgr        handlers.FlagManager
+		expMgr         handlers.ExperimentManager
+		apiKeyMgr      handlers.APIKeyManager
+		healthCheckers []handlers.HealthChecker
 	)
 
 	switch cfg.Persistence {
@@ -92,6 +93,13 @@ func main() {
 		flagMgr = handlers.NewPublishingFlagManager(grpcclient.NewFlagManagerAdapter(grpcPersist), fanout)
 		expMgr = handlers.NewPublishingExperimentManager(grpcclient.NewExperimentManagerAdapter(grpcPersist), fanout)
 		apiKeyMgr = grpcclient.NewAPIKeyManagerAdapter(grpcPersist)
+
+		healthCheckers = append(healthCheckers, grpcclient.NewPersistenceHealthChecker(grpcPersist))
+		for _, pub := range publishers {
+			if pc, ok := pub.(*grpcclient.PublisherClient); ok {
+				healthCheckers = append(healthCheckers, grpcclient.NewPublisherHealthChecker(pc))
+			}
+		}
 	default:
 		slog.Error("unsupported persistence type", "persistence", cfg.Persistence)
 		os.Exit(1)
@@ -130,6 +138,7 @@ func main() {
 		FlagManager:       flagMgr,
 		ExperimentManager: expMgr,
 		APIKeyManager:     apiKeyMgr,
+		HealthCheckers:    healthCheckers,
 	})
 
 	srv := &http.Server{
