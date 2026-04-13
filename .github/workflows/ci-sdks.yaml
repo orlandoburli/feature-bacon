@@ -139,7 +139,7 @@ jobs:
 
       - name: Test with coverage
         working-directory: sdks/java
-        run: mvn verify
+        run: mvn verify dependency:copy-dependencies
 
       - uses: ./.github/actions/sonar-onboard
         if: env.HAS_SONAR_TOKEN == 'true'
