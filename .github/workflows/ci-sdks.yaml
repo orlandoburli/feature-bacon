@@ -189,15 +189,21 @@ jobs:
 
       - name: Test JS sample (06)
         working-directory: samples/06-sdk-javascript
-        run: npm install && npx jest --coverage --forceExit
+        run: |
+          npm install && npx jest --coverage --forceExit
+          sed -i 's|^SF:|SF:06-sdk-javascript/|' coverage/lcov.info
 
       - name: Test UI demo (09)
         working-directory: samples/09-ui-feature-flags
-        run: npm install && npx jest --coverage --forceExit
+        run: |
+          npm install && npx jest --coverage --forceExit
+          sed -i 's|^SF:|SF:09-ui-feature-flags/|' coverage/lcov.info
 
       - name: Test Backend demo (10)
         working-directory: samples/10-backend-feature-flags
-        run: npm install && npx jest --coverage --forceExit
+        run: |
+          npm install && npx jest --coverage --forceExit
+          sed -i 's|^SF:|SF:10-backend-feature-flags/|' coverage/lcov.info
 
       # --- Python sample ---
       - uses: actions/setup-python@v5
