@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,10 +11,9 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	pb "github.com/orlandoburli/feature-bacon/gen/proto/bacon/v1"
-	"github.com/orlandoburli/feature-bacon/internal/tlsutil"
+	"github.com/orlandoburli/feature-bacon/internal/moduleutil"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/migrations"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/server"
 	"github.com/orlandoburli/feature-bacon/modules/postgres/store"
@@ -28,10 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	addr := os.Getenv("MODULE_GRPC_ADDR")
-	if addr == "" {
-		addr = ":50051"
-	}
+	addr := moduleutil.EnvOrDefault("MODULE_GRPC_ADDR", ":50051")
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -58,42 +53,19 @@ func main() {
 	st := store.New(db)
 	srv := server.New(st)
 
-	var opts []grpc.ServerOption
-	tlsCfg := tlsutil.Config{
-		CAFile:   os.Getenv("BACON_TLS_CA"),
-		CertFile: os.Getenv("BACON_TLS_CERT"),
-		KeyFile:  os.Getenv("BACON_TLS_KEY"),
-	}
-	if tlsCfg.Enabled() {
-		tc, err := tlsutil.ServerTLSConfig(tlsCfg)
-		if err != nil {
-			slog.Error("failed to load TLS config", "error", err)
-			os.Exit(1)
-		}
-		opts = append(opts, grpc.Creds(credentials.NewTLS(tc)))
-		slog.Info("TLS enabled")
-	}
-
-	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterPersistenceServiceServer(grpcServer, srv)
-
-	lis, err := net.Listen("tcp", addr)
+	grpcServer, err := moduleutil.NewGRPCServer(func(s *grpc.Server) {
+		pb.RegisterPersistenceServiceServer(s, srv)
+	})
 	if err != nil {
-		slog.Error("failed to listen", "error", err, "addr", addr)
+		slog.Error("failed to create gRPC server", "error", err)
 		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	go func() {
-		slog.Info("gRPC server starting", "addr", addr)
-		if err := grpcServer.Serve(lis); err != nil {
-			slog.Error("gRPC server error", "error", err)
-		}
-	}()
-
-	<-ctx.Done()
-	slog.Info("shutting down...")
-	grpcServer.GracefulStop()
+	if err := moduleutil.ListenAndServe(ctx, grpcServer, addr); err != nil {
+		slog.Error("failed to listen", "error", err, "addr", addr)
+		os.Exit(1)
+	}
 }
