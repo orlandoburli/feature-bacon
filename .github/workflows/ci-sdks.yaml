@@ -187,8 +187,16 @@ jobs:
         working-directory: sdks/javascript
         run: npm ci && npm run build
 
-      - name: Test JS sample
+      - name: Test JS sample (06)
         working-directory: samples/06-sdk-javascript
+        run: npm install && npx jest --coverage --forceExit
+
+      - name: Test UI demo (09)
+        working-directory: samples/09-ui-feature-flags
+        run: npm install && npx jest --coverage --forceExit
+
+      - name: Test Backend demo (10)
+        working-directory: samples/10-backend-feature-flags
         run: npm install && npx jest --coverage --forceExit
 
       # --- Python sample ---

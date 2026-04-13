@@ -1,0 +1,75 @@
+flags:
+  - key: pricing_algorithm
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Which pricing algorithm to use"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: in
+            valueJson: '["enterprise"]'
+        rolloutPercentage: 100
+        variant: "volume_discount"
+      - conditions: []
+        rolloutPercentage: 30
+        variant: "dynamic"
+    defaultResult:
+      enabled: true
+      variant: "standard"
+
+  - key: search_version
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Search algorithm version"
+    rules:
+      - conditions: []
+        rolloutPercentage: 50
+        variant: "v2_fuzzy"
+    defaultResult:
+      enabled: true
+      variant: "v1_exact"
+
+  - key: rate_limit
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Rate limiting strategy"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: equals
+            valueJson: '"premium"'
+        rolloutPercentage: 100
+        variant: "relaxed"
+    defaultResult:
+      enabled: true
+      variant: "strict"
+
+  - key: cache_strategy
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "Caching strategy"
+    rules:
+      - conditions: []
+        rolloutPercentage: 40
+        variant: "aggressive"
+    defaultResult:
+      enabled: true
+      variant: "conservative"
+
+  - key: premium_api
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Enable premium API endpoints"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: in
+            valueJson: '["premium","enterprise"]'
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
