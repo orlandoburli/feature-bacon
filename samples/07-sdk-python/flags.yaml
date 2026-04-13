@@ -1,0 +1,67 @@
+flags:
+  - key: maintenance_mode
+    type: boolean
+    semantics: deterministic
+    enabled: false
+    description: "Kill switch for maintenance windows"
+    defaultResult:
+      enabled: false
+
+  - key: dark_mode
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Dark mode UI toggle"
+    rules:
+      - conditions:
+          - attribute: environment
+            operator: equals
+            valueJson: '"production"'
+        rolloutPercentage: 50
+        variant: ""
+    defaultResult:
+      enabled: false
+
+  - key: checkout_redesign
+    type: string
+    semantics: deterministic
+    enabled: true
+    description: "A/B test for checkout page redesign"
+    rules:
+      - conditions:
+          - attribute: attributes.plan
+            operator: in
+            valueJson: '["pro","enterprise"]'
+        rolloutPercentage: 100
+        variant: "redesign"
+      - conditions: []
+        rolloutPercentage: 30
+        variant: "redesign"
+    defaultResult:
+      enabled: true
+      variant: "control"
+
+  - key: new_pricing
+    type: boolean
+    semantics: random
+    enabled: true
+    description: "Randomly show new pricing to 20% of visitors"
+    rules:
+      - conditions: []
+        rolloutPercentage: 20
+    defaultResult:
+      enabled: false
+
+  - key: beta_features
+    type: boolean
+    semantics: deterministic
+    enabled: true
+    description: "Enable beta features for internal users"
+    rules:
+      - conditions:
+          - attribute: attributes.email
+            operator: ends_with
+            valueJson: '"@acme.com"'
+        rolloutPercentage: 100
+    defaultResult:
+      enabled: false
