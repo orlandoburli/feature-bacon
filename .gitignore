@@ -19,3 +19,17 @@ node_modules/
 # Go
 backend/bin/
 backend/coverage.out
+**/coverage.out
+
+# Python
+__pycache__/
+*.pyc
+.coverage
+coverage.xml
+
+# Java
+**/target/
+**/dependency-reduced-pom.xml
+
+# Coverage reports
+**/coverage/

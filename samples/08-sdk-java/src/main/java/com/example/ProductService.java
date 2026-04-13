@@ -38,7 +38,7 @@ public class ProductService {
         LOG.info(() -> "Product service on :" + port);
     }
 
-    private void handleHome(HttpExchange ex) throws IOException {
+    void handleHome(HttpExchange ex) throws IOException {
         EvaluationContext ctx = contextFromQuery(ex);
         try {
             List<EvaluationResult> results = client.evaluateBatch(
@@ -61,7 +61,7 @@ public class ProductService {
         }
     }
 
-    private void handleProducts(HttpExchange ex) throws IOException {
+    void handleProducts(HttpExchange ex) throws IOException {
         EvaluationContext ctx = contextFromQuery(ex);
         boolean newPricing = client.isEnabled("new_pricing", ctx);
         String variant = client.getVariant("checkout_redesign", ctx);
@@ -78,7 +78,7 @@ public class ProductService {
         respond(ex, 200, json);
     }
 
-    private void handleHealth(HttpExchange ex) throws IOException {
+    void handleHealth(HttpExchange ex) throws IOException {
         boolean healthy = client.healthy();
         int code = healthy ? 200 : 503;
         respond(ex, code, String.format(
