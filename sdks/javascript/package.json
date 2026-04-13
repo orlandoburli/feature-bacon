@@ -12,6 +12,19 @@
   },
   "keywords": ["feature-flags", "ab-testing", "feature-bacon"],
   "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orlandoburli/feature-bacon.git",
+    "directory": "sdks/javascript"
+  },
+  "homepage": "https://github.com/orlandoburli/feature-bacon/tree/main/sdks/javascript",
+  "bugs": {
+    "url": "https://github.com/orlandoburli/feature-bacon/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"

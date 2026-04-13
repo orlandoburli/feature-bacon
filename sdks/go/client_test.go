@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	bacon "github.com/orlandoburli/feature-bacon-go"
+	bacon "github.com/orlandoburli/feature-bacon/sdks/go"
 )
 
 // ---------------------------------------------------------------------------

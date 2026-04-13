@@ -14,6 +14,11 @@ classifiers = [
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
 ]
 
+[project.urls]
+Homepage = "https://github.com/orlandoburli/feature-bacon"
+Repository = "https://github.com/orlandoburli/feature-bacon/tree/main/sdks/python"
+Issues = "https://github.com/orlandoburli/feature-bacon/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 

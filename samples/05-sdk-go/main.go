@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	bacon "github.com/orlandoburli/feature-bacon-go"
+	bacon "github.com/orlandoburli/feature-bacon/sdks/go"
 )
 
 func main() {
