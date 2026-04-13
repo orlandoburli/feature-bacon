@@ -157,10 +157,10 @@ jobs:
           projectBaseDir: sdks/java/
 
   # ---------------------------------------------------------------------------
-  # Sample Projects (code quality only — no tests)
+  # Sample Projects — tests + code quality
   # ---------------------------------------------------------------------------
   scan-samples:
-    name: Scan Samples
+    name: Test & Scan Samples
     runs-on: ubuntu-latest
     env:
       HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
@@ -169,6 +169,55 @@ jobs:
         with:
           fetch-depth: 0
 
+      # --- Go sample ---
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Test Go sample
+        working-directory: samples/05-sdk-go
+        run: go test -coverprofile=coverage.out -covermode=atomic ./...
+
+      # --- JavaScript sample ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build JS SDK
+        working-directory: sdks/javascript
+        run: npm ci && npm run build
+
+      - name: Test JS sample
+        working-directory: samples/06-sdk-javascript
+        run: npm install && npx jest --coverage --forceExit
+
+      # --- Python sample ---
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test Python sample
+        run: |
+          pip install sdks/python/
+          cd samples/07-sdk-python
+          pip install -r requirements.txt -r requirements-dev.txt
+          pytest --cov=app --cov-report=xml test_app.py
+
+      # --- Java sample ---
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build Java SDK
+        working-directory: sdks/java
+        run: mvn install -q -DskipTests
+
+      - name: Test Java sample
+        working-directory: samples/08-sdk-java
+        run: mvn verify
+
+      # --- SonarCloud ---
       - uses: ./.github/actions/sonar-onboard
         if: env.HAS_SONAR_TOKEN == 'true'
         with:
