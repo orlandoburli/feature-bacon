@@ -159,6 +159,32 @@ func TestNewRouter_Readyz(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
 	}
+
+	var body map[string]any
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body["status"] != "ready" {
+		t.Errorf("status = %v, want ready", body["status"])
+	}
+}
+
+func TestNewRouter_Metrics(t *testing.T) {
+	eng := engine.New(&stubStore{}, nil)
+	router := testRouter(eng)
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf(fmtStatusWant, w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	if len(body) == 0 {
+		t.Error("expected non-empty metrics output")
+	}
 }
 
 func TestNewRouter_Evaluate(t *testing.T) {

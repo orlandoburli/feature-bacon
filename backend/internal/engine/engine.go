@@ -3,6 +3,8 @@ package engine
 import (
 	"math/rand/v2"
 	"time"
+
+	"github.com/orlandoburli/feature-bacon/internal/metrics"
 )
 
 // FlagStore abstracts retrieval of flag definitions.
@@ -47,6 +49,17 @@ func (e *Engine) Store() FlagStore {
 
 // Evaluate processes a single flag and returns the result.
 func (e *Engine) Evaluate(flagKey string, ctx EvaluationContext) EvaluationResult {
+	start := time.Now()
+	result := e.evaluate(flagKey, ctx)
+
+	duration := time.Since(start).Seconds()
+	metrics.EvaluationDuration.WithLabelValues(ctx.TenantID, ctx.Environment).Observe(duration)
+	metrics.EvaluationsTotal.WithLabelValues(ctx.TenantID, flagKey, string(result.Reason), ctx.Environment).Inc()
+
+	return result
+}
+
+func (e *Engine) evaluate(flagKey string, ctx EvaluationContext) EvaluationResult {
 	flag, err := e.store.GetFlag(ctx.TenantID, flagKey)
 	if err != nil {
 		return EvaluationResult{

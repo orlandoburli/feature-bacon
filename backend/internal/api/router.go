@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/orlandoburli/feature-bacon/internal/api/handlers"
 	"github.com/orlandoburli/feature-bacon/internal/api/middleware"
 	"github.com/orlandoburli/feature-bacon/internal/auth"
@@ -20,6 +22,7 @@ type RouterConfig struct {
 	FlagManager       handlers.FlagManager
 	ExperimentManager handlers.ExperimentManager
 	APIKeyManager     handlers.APIKeyManager
+	HealthCheckers    []handlers.HealthChecker
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
@@ -80,10 +83,13 @@ func NewRouter(cfg RouterConfig) http.Handler {
 
 	root := http.NewServeMux()
 	root.HandleFunc("GET /healthz", handlers.HandleHealthz())
-	root.HandleFunc("GET /readyz", handlers.HandleReadyz())
+	root.HandleFunc("GET /readyz", handlers.HandleReadyz(cfg.HealthCheckers...))
+	root.Handle("GET /metrics", promhttp.Handler())
 	root.Handle("/api/", protectedAPI)
 
 	var h http.Handler = root
+	h = middleware.RequestLogger(h)
+	h = middleware.Metrics(h)
 	h = middleware.Correlation(h)
 	h = middleware.VersionHeader(h)
 	return h
