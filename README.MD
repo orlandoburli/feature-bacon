@@ -1,4 +1,14 @@
-# Feature Bacon 🐷🥓
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-full.svg">
+    <img alt="Feature Bacon" src="assets/logo-full.svg" width="600">
+  </picture>
+</p>
+
+<p align="center">
+  <strong>Feature flags & experimentation platform</strong>
+</p>
 
 [![CI](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci.yaml/badge.svg)](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci.yaml)
 [![CI - SDKs & Samples](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci-sdks.yaml/badge.svg)](https://github.com/orlandoburli/feature-bacon/actions/workflows/ci-sdks.yaml)

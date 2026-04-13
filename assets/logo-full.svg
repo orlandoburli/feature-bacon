@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" fill="none">
+  <defs>
+    <linearGradient id="meat" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#C0392B"/>
+      <stop offset="100%" stop-color="#E74C3C"/>
+    </linearGradient>
+    <linearGradient id="fat" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5CBA7"/>
+      <stop offset="100%" stop-color="#FDEBD0"/>
+    </linearGradient>
+    <linearGradient id="toggle-on" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#27AE60"/>
+      <stop offset="100%" stop-color="#2ECC71"/>
+    </linearGradient>
+    <linearGradient id="toggle-off" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#95A5A6"/>
+      <stop offset="100%" stop-color="#BDC3C7"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Icon: 3 bacon strips with toggles -->
+  <g transform="translate(10, 10) scale(0.35)">
+    <!-- Strip 1  ON -->
+    <g filter="url(#shadow)" transform="translate(56, 60)">
+      <path d="M0,40 C30,-10 60,20 100,5 C140,-10 180,25 220,10 C260,-5 300,20 340,5 C360,-2 380,15 400,10 L400,70 C380,75 360,58 340,65 C300,80 260,55 220,70 C180,85 140,50 100,65 C60,80 30,50 0,100 Z" fill="url(#meat)"/>
+      <path d="M0,40 C30,-10 60,20 100,5 C140,-10 180,25 220,10 C260,-5 300,20 340,5 C360,-2 380,15 400,10 L400,35 C380,40 360,33 340,30 C300,45 260,20 220,35 C180,50 140,25 100,30 C60,45 30,25 0,65 Z" fill="url(#fat)" opacity="0.85"/>
+      <g transform="translate(290, 16)">
+        <rect x="0" y="0" width="52" height="28" rx="14" fill="url(#toggle-on)"/>
+        <circle cx="37" cy="14" r="10" fill="#fff"/>
+      </g>
+    </g>
+    <!-- Strip 2  ON -->
+    <g filter="url(#shadow)" transform="translate(40, 185)">
+      <path d="M0,45 C35,-5 70,25 110,10 C150,-5 190,30 230,15 C270,0 310,25 350,10 C375,2 400,20 430,15 L430,80 C400,85 375,67 350,75 C310,90 270,65 230,80 C190,95 150,60 110,75 C70,90 35,55 0,105 Z" fill="url(#meat)"/>
+      <path d="M0,45 C35,-5 70,25 110,10 C150,-5 190,30 230,15 C270,0 310,25 350,10 C375,2 400,20 430,15 L430,40 C400,45 375,37 350,35 C310,50 270,25 230,40 C190,55 150,30 110,35 C70,50 35,30 0,70 Z" fill="url(#fat)" opacity="0.85"/>
+      <g transform="translate(320, 18)">
+        <rect x="0" y="0" width="52" height="28" rx="14" fill="url(#toggle-on)"/>
+        <circle cx="37" cy="14" r="10" fill="#fff"/>
+      </g>
+    </g>
+    <!-- Strip 3  OFF -->
+    <g filter="url(#shadow)" transform="translate(64, 310)">
+      <path d="M0,40 C25,-8 55,18 90,5 C130,-8 170,22 210,8 C250,-5 290,18 330,5 C355,-2 375,12 390,8 L390,68 C375,72 355,58 330,65 C290,78 250,55 210,68 C170,82 130,50 90,65 C55,78 25,48 0,95 Z" fill="url(#meat)" opacity="0.5"/>
+      <path d="M0,40 C25,-8 55,18 90,5 C130,-8 170,22 210,8 C250,-5 290,18 330,5 C355,-2 375,12 390,8 L390,33 C375,37 355,30 330,30 C290,43 250,20 210,33 C170,48 130,23 90,28 C55,43 25,23 0,62 Z" fill="url(#fat)" opacity="0.45"/>
+      <g transform="translate(280, 14)">
+        <rect x="0" y="0" width="52" height="28" rx="14" fill="url(#toggle-off)"/>
+        <circle cx="15" cy="14" r="10" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="230" y="105" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="800" font-size="72" fill="#2C3E50" letter-spacing="-2">
+    feature
+  </text>
+  <text x="230" y="170" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="800" font-size="72" fill="#E74C3C" letter-spacing="-2">
+    bacon
+  </text>
+  <text x="232" y="192" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="400" font-size="16" fill="#7F8C8D" letter-spacing="4">
+    FEATURE FLAGS &amp; EXPERIMENTATION
+  </text>
+</svg>
